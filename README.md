@@ -2,5 +2,4 @@
 Automated minutes taker / meeting summarizer 
 
 Faculty Advisor: Dr. Masoud Makrehchi
-
 Capstone Coordinator: Dr. Q. Mahmoud

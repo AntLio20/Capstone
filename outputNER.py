@@ -1,13 +1,14 @@
 # pip install -U spacy
 # python -m spacy download en_core_web_lg
 import os
+import docx2txt
 import spacy
 from spacy import displacy
 import Transcript
 
 def createNerOutput (filepath):
     # import transcript file and remove timestamps and speaker from text
-    transcript = Transcript.cleanTranscript(Transcript.getText(filepath), 0, 0)
+    transcript = Transcript.cleanTranscript(docx2txt.process(filepath), 0, 0)
 
     # prepare spacy pipeline and assign it the transcript file to analyse
     nlp = spacy.load("en_core_web_lg")

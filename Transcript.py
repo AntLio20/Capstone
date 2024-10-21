@@ -1,13 +1,3 @@
-import docx
-
-# function to retrieve docx file into string
-def getText(filename):
-    doc = docx.Document(filename)
-    fullText = []
-    for para in doc.paragraphs:
-        fullText.append(para.text)
-    return '\n'.join(fullText)
-
 # function to clean up transcript, timestamp/speaker = 0 to remove
 def cleanTranscript (text, timestamp, speaker):
     # split each line of text into list

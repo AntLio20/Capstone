@@ -6,8 +6,9 @@
 import os
 import docx2txt
 import tiktoken
+import outputNER
 from openai import OpenAI
-
+from docx import Document 
 
 # ----------------------------- Functions -----------------------------------------------
 
@@ -51,10 +52,6 @@ filepath = "trans.docx"
 transcript = docx2txt.process(filepath)
 max_tokens = 6000
 
-# saves the script to a txt file
-with open('transcript.txt', 'w') as trans:
-    trans.write(transcript)
-
 # calls function to seperate string into chunks each fitting the max tokens
 transcript_chunks = chunktoText(transcript, max_tokens)
 
@@ -85,10 +82,10 @@ for chunk in transcript_chunks:
 # partitioning the summarized transcript into different parts in a meeting minute document using the live response
 for chunk in completion: # this takes each peice of the live response object within the created completion
 
-    # getting the reponse of openAI where choice includes the delta, index and finish_reason
+    # getting the response of openAI where choice includes the delta, index and finish_reason
     response = chunk.choices
 
-    # checking if the first response exists and delta which containts the role and content exist and if delta has any content within it
+    # checking if the first response exists and delta which contains the role and content exist and if delta has any content within it
     if response and response[0].delta and response[0].delta.content:
 
         # splitting the response into single words
@@ -108,8 +105,19 @@ for chunk in completion: # this takes each peice of the live response object wit
         # printing out the content live
         # print(response[0].delta.content, end = '', flush = True) 
             
-# printing out the summarized transcript
-for i in range(0, len(meetingNotesList)):
-    meetingNotesList[i] = meetingNotesList[i].strip()
-    print( sectionHeadings[i] + ": " + meetingNotesList[i] + "\n")
 
+# creating a new document to store the meeting notes
+summarizedMeetingNotes = Document()
+
+# loops through each section of the metting notes to put in the document
+for i in range(0, len(meetingNotesList)):
+    meetingNotesList[i] = meetingNotesList[i].strip() # formatting it the string so there's no space at the beginning or end
+    summarizedMeetingNotes.add_heading(sectionHeadings[i], level = 1)
+    summarizedMeetingNotes.add_paragraph(meetingNotesList[i])
+    print( sectionHeadings[i] + ": " + meetingNotesList[i] + "\n") # printing it out
+
+# saves the script to a docx file
+summarizedMeetingNotes.save("meeting_notes.docx")
+
+# create visualizations for NER using SpaCy platform 
+outputNER.createNerOutput(filepath)

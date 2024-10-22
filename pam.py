@@ -121,3 +121,7 @@ summarizedMeetingNotes.save("meeting_notes.docx")
 
 # create visualizations for NER using SpaCy platform 
 outputNER.createNerOutput(filepath)
+
+# open transcript NER and transcript dependencies html documents
+os.system("start transcript.html")
+os.system("start transcriptDependencies.html")

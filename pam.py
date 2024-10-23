@@ -6,6 +6,9 @@
 import os
 import docx2txt
 import tiktoken
+from openai.resources.audio import Transcriptions
+
+import Transcript
 import outputNER
 from openai import OpenAI
 from docx import Document 
@@ -39,23 +42,25 @@ client = OpenAI(
     api_key=os.environ.get(key),
 )
 
-# initializing a list that will store different parts of the summarzied transcript
+# initializing a list that will store different parts of the summarized transcript
 meetingNotesList = []
 sectionHeadings = ["Opening", "Present", "Absent", "Agenda Approval", "Previous Meeting Approval" ,"Previous Meeting Summary", "Summary of Meeting", "Adjournment"]
 
 # initializing a counter for each section
 sectionCounter = 0
 
-
 # converts the document to a string
 filepath = "trans.docx"
 transcript = docx2txt.process(filepath)
 max_tokens = 6000
 
-# calls function to seperate string into chunks each fitting the max tokens
+# extracts the date and time of transcript creation for use in minutes and file naming
+date = Transcript.extractFormalDate(filepath)
+
+# calls function to separate string into chunks each fitting the max tokens
 transcript_chunks = chunktoText(transcript, max_tokens)
 
-# desinates the chunk number to gpt
+# designates the chunk number to gpt
 chunkCounter = 1
 
 # this code below is used to submit a prompt to the OpenAI API, a for loop to go through all chunks
@@ -68,7 +73,7 @@ for chunk in transcript_chunks:
             {
                 "role": "user",
                 "content": (
-                    f"Organize the transcript into different sections using '☺' in between each section (not at the beginning or end) and dont include any headings and /n's , 1. (opening) Who hosted the meeting and the date and time it started, 2. Present (all present members), 3. Absent (all absent members), 4. The agenda and if it was approved, 5. The minutes from the previous meeting were reviewed and approved, 6. Summary of the last meeting notes and decisions made, 7. A detailed summary of the current meeting including new topics and decisions/motions, 8. The ajournment of the meeting and the time of it (chunk #{chunkCounter}): {chunk}"
+                    f"Organize the transcript created on into different sections using '☺' in between each section (not at the beginning or end) and dont include any headings and /n's , 1. (opening) Who hosted the meeting on {date} , 2. Present (all present members), 3. Absent (all absent members), 4. The agenda and if it was approved, 5. The minutes from the previous meeting were reviewed and approved, 6. Summary of the last meeting notes and decisions made, 7. A detailed summary of the current meeting including new topics and decisions/motions, 8. The ajournment of the meeting and the time of it (chunk #{chunkCounter}): {chunk}"
                 )
             }
         ],
@@ -77,10 +82,8 @@ for chunk in transcript_chunks:
     )
     chunkCounter += 1
 
-
-
 # partitioning the summarized transcript into different parts in a meeting minute document using the live response
-for chunk in completion: # this takes each peice of the live response object within the created completion
+for chunk in completion: # this takes each piece of the live response object within the created completion
 
     # getting the response of openAI where choice includes the delta, index and finish_reason
     response = chunk.choices
@@ -109,7 +112,10 @@ for chunk in completion: # this takes each peice of the live response object wit
 # creating a new document to store the meeting notes
 summarizedMeetingNotes = Document()
 
-# loops through each section of the metting notes to put in the document
+# print message informing the user about the creation of docx minutes file
+print("The following has been printed to minutes.docx:\n")
+
+# loops through each section of the meeting notes to put in the document
 for i in range(0, len(meetingNotesList)):
     meetingNotesList[i] = meetingNotesList[i].strip() # formatting it the string so there's no space at the beginning or end
     summarizedMeetingNotes.add_heading(sectionHeadings[i], level = 1)
@@ -117,7 +123,7 @@ for i in range(0, len(meetingNotesList)):
     print( sectionHeadings[i] + ": " + meetingNotesList[i] + "\n") # printing it out
 
 # saves the script to a docx file
-summarizedMeetingNotes.save("meeting_notes.docx")
+summarizedMeetingNotes.save("minutes.docx")
 
 # create visualizations for NER using SpaCy platform 
 outputNER.createNerOutput(filepath)

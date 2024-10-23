@@ -1,4 +1,4 @@
-# Run these commands first to get the library to run:
+# Run these commands first to get redac to run:
 # Install spacy in the virtual environment: pip install spacy
 # Download language model: python -m spacy download en_core_web_lg
 
@@ -8,9 +8,7 @@ import Transcript
 import docx2txt
 from docx import Document
 from docx.oxml import OxmlElement
-import os
 from sklearn.cluster import KMeans
-import numpy as np
 
 # Load language model
 nlp = spacy.load("en_core_web_lg")

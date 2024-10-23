@@ -23,7 +23,8 @@ def cleanTranscript (text, timestamp, speaker):
     return text
 
 # Obtain the duration of a meeting
-def meetingDuration (transcript):
+def meetingDuration (filepath):
+    transcript = docx2txt.process(filepath)
     subString = ''
     subString2 = ''
     for c in reversed(transcript):
@@ -42,8 +43,15 @@ def meetingDuration (transcript):
     return durationHours, durationMinutes
 
 # Calculate meeting start time using raw file date minus meeting duration
-def calculateStart (filepath, rawHours, rawMinutes):
+def calculateStart (filepath):
+    rawDate = time.ctime(os.path.getctime(filepath))
     duration = meetingDuration(filepath)
+    if rawDate[9].isspace():
+        rawHours = int(rawDate[10:12])
+        rawMinutes = int(rawDate[13:15])
+    else:
+        rawHours = int(rawDate[11:13])
+        rawMinutes = int(rawDate[14:16])
     minutes = rawMinutes - duration[1]
     if minutes < 0:
         minutes += 60
@@ -55,12 +63,10 @@ def calculateStart (filepath, rawHours, rawMinutes):
 # Obtain creation date of transcript file and meeting start time
 def extractDate (filepath):
     rawDate = time.ctime(os.path.getctime(filepath))
-    transcript = docx2txt.process(filepath)
+    startTime = calculateStart(filepath)
     if rawDate[9].isspace():
-        startTime = calculateStart(transcript, int(rawDate[10:12]), int(rawDate[13:15]))
         date = Date(rawDate[:3], rawDate[4:7], rawDate[8], startTime[0], startTime[1], "", rawDate[19:23])
     else:
-        startTime = calculateStart(transcript, int(rawDate[11:13]), int(rawDate[14:16]))
         date = Date(rawDate[:3], rawDate[4:7], rawDate[8:10], startTime[0], startTime[1], "", rawDate[20:24])
     return date
 

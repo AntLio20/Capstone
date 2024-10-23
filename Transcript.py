@@ -61,7 +61,7 @@ def calculateStart (filepath):
     return hours, minutes
 
 # Obtain creation date of transcript file and meeting start time
-def extractDate (filepath):
+def extractFormalDate (filepath):
     rawDate = time.ctime(os.path.getctime(filepath))
     startTime = calculateStart(filepath)
     if rawDate[9].isspace():

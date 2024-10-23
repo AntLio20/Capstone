@@ -37,8 +37,8 @@ print("Identified main topics:", topicEntities)
 entityTexts = [entity.text for entity in doc.ents]
 entityVectors = [nlp(entity.text).vector for entity in doc.ents]
 
-# Using KMeans clustering to group similar entities (adjust n_clusters as needed)
-n_clusters = 3  # Number of topic clusters (can be adjusted)
+# Using KMeans clustering to group similar entities 
+n_clusters = 3  # Number of topic clusters
 if len(entityVectors) > 0:
     kmeans = KMeans(n_clusters=n_clusters, random_state=0)
     kmeans.fit(entityVectors)

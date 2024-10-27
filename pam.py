@@ -6,8 +6,6 @@
 import os
 import docx2txt
 import tiktoken
-from openai.resources.audio import Transcriptions
-
 import Transcript
 import outputNER
 from openai import OpenAI
@@ -123,7 +121,8 @@ for i in range(0, len(meetingNotesList)):
     print( sectionHeadings[i] + ": " + meetingNotesList[i] + "\n") # printing it out
 
 # saves the script to a docx file
-summarizedMeetingNotes.save("minutes.docx")
+minutesFilename = Transcript.extractFilenameDate(filepath) + "_minutes.docx"
+summarizedMeetingNotes.save(minutesFilename)
 
 # create visualizations for NER using SpaCy platform 
 outputNER.createNerOutput(filepath)

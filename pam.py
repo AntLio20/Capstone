@@ -9,7 +9,7 @@ import tiktoken
 import Transcript
 import outputNER
 from openai import OpenAI
-from docx import Document 
+from docx import Document
 
 # ----------------------------- Functions -----------------------------------------------
 
@@ -77,6 +77,7 @@ for chunk in transcript_chunks:
         ],
         # this is used to get real time response word for word
         stream=True,
+        temperature=0,
     )
     chunkCounter += 1
 
@@ -110,8 +111,11 @@ for chunk in completion: # this takes each piece of the live response object wit
 # creating a new document to store the meeting notes
 summarizedMeetingNotes = Document()
 
+# set name of file
+minutesFilename = Transcript.extractFilenameDate(filepath) + "_minutes.docx"
+
 # print message informing the user about the creation of docx minutes file
-print("The following has been printed to minutes.docx:\n")
+print("The following has been printed to " + minutesFilename + ":\n")
 
 # loops through each section of the meeting notes to put in the document
 for i in range(0, len(meetingNotesList)):
@@ -121,7 +125,6 @@ for i in range(0, len(meetingNotesList)):
     print( sectionHeadings[i] + ": " + meetingNotesList[i] + "\n") # printing it out
 
 # saves the script to a docx file
-minutesFilename = Transcript.extractFilenameDate(filepath) + "_minutes.docx"
 summarizedMeetingNotes.save(minutesFilename)
 
 # create visualizations for NER using SpaCy platform 

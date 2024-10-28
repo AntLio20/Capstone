@@ -32,4 +32,3 @@ def createNerOutput (filepath):
     html2 = displacy.render(sentences, style="dep", page=True)
     f2 = open("transcriptDependencies.html", "x")
     f2.write(html2)
-

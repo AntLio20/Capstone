@@ -54,7 +54,7 @@ for i, sentence in enumerate(sentences):
     cluster = clusters[i]  # Get topic/cluster ID of the current sentence
 
     # Check if sentence contains off-topic keyword
-    if any(keyword in sentence for keyword in off_topic_keywords):
+    if any(keyword in sentence for keyword in offTopicKeywords):
         # Apply strikethrough to this sentence
         addStrikethrough(paragraph, sentence)
 
@@ -69,5 +69,5 @@ for i, sentence in enumerate(sentences):
         paragraph.add_run(sentence)
 
 # Save the redacted document
-summarizedMeetingNotes.save("test.docx")
-print("Redacted transcript saved as 'test.docx'")
+summarizedMeetingNotes.save("redactTest.docx")
+print("Redacted transcript saved as 'redactTest.docx'")

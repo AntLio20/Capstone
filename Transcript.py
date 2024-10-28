@@ -71,6 +71,56 @@ def extractFormalDate (filepath):
         date = Date(rawDate[:3], rawDate[4:7], rawDate[8:10], startTime[0], startTime[1], "", rawDate[20:24])
     return date
 
+# Obtain file date for use in file naming convention
+def extractFilenameDate (filepath):
+    rawDate = time.ctime(os.path.getctime(filepath))
+    date = rawDate[-4:] + "-"
+    ampm = ""
+    month = rawDate[4:7]
+    match month:
+        case "Jan":
+            date += "01"
+        case "Feb":
+            date += "02"
+        case "Mar":
+            date += "03"
+        case "Apr":
+            date += "04"
+        case "May":
+            date += "05"
+        case "Jun":
+            date += "06"
+        case "Jul":
+            date += "07"
+        case "Aug":
+            date += "08"
+        case "Sep":
+            date += "09"
+        case "Oct":
+            date += "10"
+        case "Nov":
+            date += "11"
+        case "Dec":
+            date += "12"
+    date += "-" + rawDate[8:10] + "_"
+    if rawDate[12] == ":":
+        date += rawDate[11] + "-"
+        date += rawDate[13:15]
+        ampm = "AM"
+    elif rawDate[13] == ":":
+        if rawDate[11:13] == "24":
+            date += "12"
+            ampm = "AM"
+        elif int(rawDate[11:13]) > 12:
+            date += str(int(rawDate[11:13]) - 12)
+            ampm = "PM"
+        elif rawDate[11:13] == "12":
+            date += "12"
+            ampm = "PM"
+        date += "\u2236" + rawDate[14:16]
+    date += ampm
+    return date
+
 class Date:
     def __init__(self, weekday, month, day, hour, minute, ampm, year):
         match weekday:

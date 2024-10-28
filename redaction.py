@@ -1,89 +1,73 @@
 # Run these commands first to get redac to run:
-# Install spacy in the virtual environment: pip install spacy
+# Install spacy: pip install spacy
 # Download language model: python -m spacy download en_core_web_lg
+# Install sklearn: pip install scikit-learn
 
-import spacy
-from collections import Counter, defaultdict
-import Transcript
-import docx2txt
-from docx import Document
-from docx.oxml import OxmlElement
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import NMF
 from sklearn.cluster import KMeans
+from docx import Document
+import spacy
+import docx2txt
+import Transcript
 
-# Load language model
+# Load spaCy model
 nlp = spacy.load("en_core_web_lg")
 
-# Converts the document to a string
+# Load transcript and clean
 filepath = "trans.docx"
 transcript = docx2txt.process(filepath)
 
 # Extract and clean the transcript text
 cleanedTranscript = Transcript.cleanTranscript(transcript, 0, 0)
 
-# Process the cleaned text with spaCy
-doc = nlp(cleanedTranscript)
+# Define off-topic keywords
+offTopicKeywords = ["aside", "off topic", "off the script", "off the logs", "not important", "unrelated", "readact"]
 
+# Split into sentences
+sentences = cleanedTranscript.split(". ")
 
-# 1. Topic-Based Filtering (Named entities)
+# Transform into TF-IDF vectors
+vectorizer = TfidfVectorizer(stop_words='english')
+tfidfMatrix = vectorizer.fit_transform(sentences)
 
-# Counting frequency of named entities
-entityFreq = Counter([entity.text for entity in doc.ents])
+# Topic modeling with NMF
+nmfModel = NMF(n_components=5, random_state=42)
+nmfTopics = nmfModel.fit_transform(tfidfMatrix)
 
-# Set a threshold for named entities to be considered topics
-topicEntities = [entity for entity, freq in entityFreq.items() if freq >= 2]
-print("Identified main topics:", topicEntities)
+# Clustering with Sentence Embeddings
+embeddings = [nlp(sentence).vector for sentence in sentences]
+kmeans = KMeans(n_clusters=5, random_state=42)
+clusters = kmeans.fit_predict(embeddings)
 
-# Clustering entities by semantic similarity
-entityTexts = [entity.text for entity in doc.ents]
-entityVectors = [nlp(entity.text).vector for entity in doc.ents]
-
-# Using KMeans clustering to group similar entities (adjust n_clusters as needed)
-n_clusters = 3  # Number of topic clusters (can be adjusted)
-if len(entityVectors) > 0:
-    kmeans = KMeans(n_clusters=n_clusters, random_state=0)
-    kmeans.fit(entityVectors)
-    labels = kmeans.labels_
-
-    # Group entities based on their cluster labels
-    clusters = defaultdict(list)
-    for idx, label in enumerate(labels):
-        clusters[label].append(entityTexts[idx])
-
-    # Print clustered entities based on similarity
-    print("\nEntities grouped by similarity:")
-    for cluster_id, entities in clusters.items():
-        print(f"Cluster {cluster_id}: {entities}")
-
-# Create a new Document object to save the modified transcript
+# Initialize Document
 summarizedMeetingNotes = Document()
 
-# Function to strikethrough text using Unicode
+# Strikethrough function
 def addStrikethrough(paragraph, text):
     run = paragraph.add_run(text)
-    # Apply strikethrough formatting using the underlying XML
-    r = run._element
-    rPr = r.get_or_add_rPr()
-    strike = OxmlElement('w:strike')
-    rPr.append(strike)
+    run.font.strike = True
 
-# Analyze off-topic by comparing each sentence to the clustered topics
-for sentence in doc.sents:
-    nounSentenceChunks = [chunk.text for chunk in sentence.noun_chunks]
-    
-    # Find intersection between sentence chunks and topic entities
-    common_topics = set(nounSentenceChunks).intersection(topicEntities)
-    common_clusters = any(set(nounSentenceChunks).intersection(set(cluster)) for cluster in clusters.values())
-    
-    # Add the sentence to the document
+# Iterate through sentences, applying topic-based redaction
+for i, sentence in enumerate(sentences):
     paragraph = summarizedMeetingNotes.add_paragraph()
-    
-    if not common_topics and not common_clusters:
-        # Apply strikethrough formatting if the sentence is off-topic
-        addStrikethrough(paragraph, sentence.text)
+    cluster = clusters[i]  # Get topic/cluster ID of the current sentence
+
+    # Check if sentence contains off-topic keyword
+    if any(keyword in sentence for keyword in off_topic_keywords):
+        # Apply strikethrough to this sentence
+        addStrikethrough(paragraph, sentence)
+
+        # Redact the following sentences in the same topic/cluster
+        j = i + 1
+        while j < len(sentences) and clusters[j] == cluster:
+            paragraph = summarizedMeetingNotes.add_paragraph()
+            addStrikethrough(paragraph, sentences[j])
+            j += 1
     else:
         # Add normal text for on-topic sentences
-        paragraph.add_run(sentence.text)
+        paragraph.add_run(sentence)
 
-# Save the modified document with strikethroughs applied
+# Save the redacted document
 summarizedMeetingNotes.save("test.docx")
-print("Transcript saved as 'test.docx'")
+print("Redacted transcript saved as 'test.docx'")

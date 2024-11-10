@@ -4,13 +4,13 @@
 import spacy
 from spacy.matcher import Matcher
 import re
+import docx2txt
 
 # Load SpaCy English model
 try:
     nlp = spacy.load("en_core_web_sm")
 except Exception as e:
     print("Error loading SpaCy model:", e)
-
 
 # Function to identify actionable sentences and replace "I" with speaker's name
 def actionableItems(transcript):
@@ -39,11 +39,13 @@ def actionableItems(transcript):
     for i, line in enumerate(lines):
         # Detect timestamp line and skip if found
         timestamp_match = re.match(r"^\d+:\d+:\d+\.\d+\s-->\s\d+:\d+:\d+\.\d+$", line)
+        if not timestamp_match:
+            timestamp_match = re.match(r"^\d+:\d+:\d+\.\d+\s-->\s\d+:\d+:\d+\.\d+\s\s$", line)
         if timestamp_match:
             continue
 
         # Detect speaker line and capture full name of speaker
-        if i > 0 and re.match(r"^[A-Za-z]+\s[A-Za-z]+$", line):
+        if i > 0 and (re.match(r"^[A-Za-z]+\s[A-Za-z]+$", line) or re.match(r"^[A-Za-z]+\s[A-Za-z]+\s\s$", line)):
             current_speaker = line
             continue
 
@@ -73,7 +75,8 @@ def actionableItems(transcript):
 
     return list(actionable_sentences)
 
-def actionableItemsOutput (transcript):
+def outputActionableItems (filepath):
+    transcript = docx2txt.process(filepath)
     actionable_sentences = actionableItems(transcript)
     print("Actionable Sentences Found:")
     for speaker, sentence in actionable_sentences:

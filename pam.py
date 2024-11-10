@@ -30,6 +30,15 @@ def chunktoText(transcript, max_token):
         i = i + max_token
     return chunks
 
+# this function returns the summarized meeting notes
+def getMeetingNotes():
+    return meetingNotesList;
+
+# this function returns the headings
+def getSectionHeadings():
+    return sectionHeadings;
+
+
 
 # ----------------------------------------- Main Method ------------------------------------------------
 

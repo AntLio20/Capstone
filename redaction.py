@@ -3,73 +3,126 @@
 # Download language model: python -m spacy download en_core_web_lg
 # Install sklearn: pip install scikit-learn
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import NMF
 from sklearn.cluster import KMeans
-from docx import Document
 import spacy
 import docx2txt
-import Transcript
 
 # Load spaCy model
 nlp = spacy.load("en_core_web_lg")
 
-# Load transcript and clean
-filepath = "trans.docx"
-transcript = docx2txt.process(filepath)
-
-# Extract and clean the transcript text
-cleanedTranscript = Transcript.cleanTranscript(transcript, 0, 0)
-
 # Define off-topic keywords
-offTopicKeywords = ["aside", "off topic", "off the script", "off the logs", "not important", "unrelated", "readact"]
+offTopicKeywords = ["quick aside", "off topic", "off the script", "off the logs", "not important", "readact"]
 
-# Split into sentences
-sentences = cleanedTranscript.split(". ")
+# Each text line is a node in the linked list
+class SentenceNode:
+    def __init__(self, text, isIgnored=False):
+        self.text = text
+        self.isIgnored = isIgnored
+        self.next = None  # Pointer to the next node
 
-# Transform each sentence into TF-IDF (Term Frequency-Inverse Document Frequency) numerical vectors, removing common english words
-vectorizer = TfidfVectorizer(stop_words='english')
-tfidfMatrix = vectorizer.fit_transform(sentences)
+# Build the linked list 
+def buildLinkedList(transcriptLines):
+    head = None
+    prev = None
+    for idx, line in enumerate(transcriptLines):
+        # Idenitfy timestamps and speakers as ignored text
+        isIgnored = (idx % 4 == 0) or (idx % 4 == 1)
+        node = SentenceNode(line, isIgnored)
+        if not head:
+            head = node
+        if prev:
+            prev.next = node
+        prev = node
+    return head
 
-# Topic modeling with Non-negative Matrix Factorization: NMF, grouping words that frequently appear together into n topics
-nmfModel = NMF(n_components=7, random_state=42)
+# Function to cluster sentences within a block
+def clusterSentences(sentencesBlock, nClusters):
+    embeddings = [nlp(sentence).vector for sentence in sentencesBlock]
+    kmeans = KMeans(n_clusters = nClusters, random_state=42)
+    clusterLabels = kmeans.fit_predict(embeddings)
+    return clusterLabels
 
-# Calls the NMF model and returns a matrix: nmf_topics, where each row represents a sentence, each column represents the probability score for each topic
-nmfTopics = nmfModel.fit_transform(tfidfMatrix)
+# Strikethrough function for visualization, to indicate which text is removed later
+def addStrikethrough(text):
+    return f"[REDACTED: {text}]"
 
-# Clustering with Sentence Embeddings, converting each sentence into vector representation of the semantic meaning
-embeddings = [nlp(sentence).vector for sentence in sentences]
-kmeans = KMeans(n_clusters=20, random_state=42)
-clusters = kmeans.fit_predict(embeddings)
 
-# Initialize Document
-summarizedMeetingNotes = Document()
+# Main redaction function
+def redact(transcript):
+    # Split the transcript into lines and build a linked list
+    transcriptLines = transcript.splitlines()
+    linkedList = buildLinkedList(transcriptLines)
+    
+    # Result string to store the redacted transcript
+    redacted_transcript = ""
 
-# Strikethrough function for visualizaton
-def addStrikethrough(paragraph, text):
-    run = paragraph.add_run(text)
-    run.font.strike = True
+    # Iterate through linked list, redacting content as needed
+    current = linkedList
+    while current:
+        if current.isIgnored:
+            # If the line is to be ignored (timestamp or speaker name), add it as is
+            if current.text.strip():
+                redacted_transcript += current.text + "\n"
+            current = current.next
+            continue
 
-# Iterate through sentences, applying topic-based redaction to topics containing keywords
-for i, sentence in enumerate(sentences):
-    paragraph = summarizedMeetingNotes.add_paragraph()
-    cluster = clusters[i]  # Get topic/cluster ID of the current sentence
+        # Check if the current sentence contains an off-topic keyword
+        if any(keyword in current.text for keyword in offTopicKeywords):
+            # If it does, immediately apply strikethrough to this sentence
+            redacted_transcript += addStrikethrough(current.text) + "\n"
 
-    # Check if sentence contains off-topic keyword
-    if any(keyword in sentence for keyword in offTopicKeywords):
-        # Apply strikethrough to this sentence
-        addStrikethrough(paragraph, sentence)
+            # Collect the immediate 3 sentences following the redaction indication
+            initialContext = []
+            tempNode = current.next
+            count = 0
+            while tempNode and count < 3:
+                if not tempNode.isIgnored and tempNode.text.strip():
+                    initialContext.append(tempNode.text)
+                    count += 1
+                tempNode = tempNode.next
 
-        # Redact the following sentences in the same topic/cluster
-        j = i + 1
-        while j < len(sentences) and clusters[j] == cluster:
-            paragraph = summarizedMeetingNotes.add_paragraph()
-            addStrikethrough(paragraph, sentences[j])
-            j += 1
-    else:
-        # Add normal text for on-topic sentences
-        paragraph.add_run(sentence)
+            # Generate clusters to find the topic for redaction
+            if initialContext:
+                initialClusterLabels = clusterSentences(initialContext, 2)
+                primaryOffTopicCluster = max(set(initialClusterLabels), key=list(initialClusterLabels).count)
 
-# Save the redacted document
-summarizedMeetingNotes.save("redactTest.docx")
-print("Redacted transcript saved as 'redactTest.docx'")
+            # Collect the following 10 sentences following the redaction indication
+            tempNode = current.next
+            count = 0
+            remainingSentences = []
+            nonIgnoredSentencesForClustering = []
+            while tempNode and count < 10:
+                if tempNode.text.strip():
+                    remainingSentences.append(tempNode)
+                    if not tempNode.isIgnored:
+                        nonIgnoredSentencesForClustering.append(tempNode.text)
+                        count += 1
+                tempNode = tempNode.next
+
+            # Generate clusters only for non-ignored sentences
+            remainingClusterLabels = clusterSentences(nonIgnoredSentencesForClustering, 4)
+
+            # Redact based on clusters
+            for node in remainingSentences:
+                if node.text.strip():
+                    if node.isIgnored:
+                        redacted_transcript += node.text + "\n"
+                    else:
+                        # Check if the cluster label for this sentence matches the primary off-topic cluster
+                        nonIgnoredIndex = nonIgnoredSentencesForClustering.index(node.text) if node.text in nonIgnoredSentencesForClustering else -1
+                        if nonIgnoredIndex != -1 and remainingClusterLabels[nonIgnoredIndex] == primaryOffTopicCluster:
+                            redacted_transcript += addStrikethrough(node.text) + "\n"
+                        else:
+                            redacted_transcript += node.text + "\n"
+            # Skip to the next sentence after the processed block
+            current = tempNode
+        
+        else:
+            # If no keyword is found, add the sentence as normal text
+            if current.text.strip():
+                redacted_transcript += current.text + "\n"
+
+        # Move to the next node
+        current = current.next
+
+    return redacted_transcript

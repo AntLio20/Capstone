@@ -117,8 +117,12 @@ def extractFilenameDate (filepath):
         elif rawDate[11:13] == "12":
             date += "12"
             ampm = "PM"
+        else:
+            date += str(int(rawDate[11:13]))
+            ampm = "AM"
         date += "\u2236" + rawDate[14:16]
     date += ampm
+    print(date)
     return date
 
 class Date:

@@ -1,16 +1,16 @@
+# File Name: Minutes.py
+# Authors: Javier Chung, Andy Dai, Antonio Lio, Jason Stuckless
+# Description: Function for creating a minutes document
+
 import GPT
-import Transcript
 from docx import Document
 
-def generateMinutes(filepath):
+def generateMinutes(transcript, minutesFilename):
     # Retrieve summarized meeting notes and section headings from GPT.py
-    meetingNotesList, sectionHeadings = GPT.gptSummarization(filepath)
+    meetingNotesList, sectionHeadings = GPT.gptSummarization(transcript)
 
     # Create a new document to store the meeting notes
     summarizedMeetingNotes = Document()
-
-    # Set name of minutes file
-    minutesFilename = Transcript.extractFilenameDate(filepath) + "_minutes.docx"
 
     # Print message informing the user about the creation of docx minutes file
     print("The following has been printed to " + minutesFilename + ":\n")

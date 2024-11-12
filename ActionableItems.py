@@ -1,10 +1,13 @@
-# pip install -U spacy
-# python -m spacy download en_core_web_sm
+# File Name: ActionableItems.py
+# Authors: Javier Chung, Andy Dai, Antonio Lio, Jason Stuckless
+# Description: Functions to locate actionable items and output the list of actionable items
+
+# Required commands:
+# Install spacy: pip install spacy
 
 import spacy
 from spacy.matcher import Matcher
 import re
-import docx2txt
 
 # Load SpaCy English model
 try:
@@ -23,7 +26,56 @@ def actionableItems(transcript):
         [{"LOWER": "send"}, {"IS_ALPHA": True, "OP": "?"}],
         [{"LOWER": "review"}, {"IS_ALPHA": True, "OP": "?"}],
         [{"LOWER": "update"}, {"IS_ALPHA": True, "OP": "?"}],
-        [{"LOWER": "finalize"}, {"IS_ALPHA": True, "OP": "?"}]
+        [{"LOWER": "finalize"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "add"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "analyze"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "analyse"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "attend"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "collect"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "compile"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "compute"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "construct"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "copy"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "coordinate"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "delegate"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "develop"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "distribute"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "draft"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "edit"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "establish"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "evaluate"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "execute"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "extract"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "facilitate"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "find"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "formulate"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "initiate"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "inspect"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "interview"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "investigate"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "locate"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "maintain"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "make"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "manage"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "measure"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "merge"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "notify"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "obtain"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "organize"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "perform"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "prepare"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "request"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "research"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "revise"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "search"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "secure"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "select"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "study"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "submit"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "train"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "type"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "verify"}, {"IS_ALPHA": True, "OP": "?"}],
+        [{"LOWER": "write"}, {"IS_ALPHA": True, "OP": "?"}]
     ]
 
     matcher.add("ActionableItems", actionable_patterns)
@@ -39,12 +91,15 @@ def actionableItems(transcript):
     for i, line in enumerate(lines):
         # Detect timestamp line and skip if found
         timestamp_match = re.match(r"^\d+:\d+:\d+\.\d+\s-->\s\d+:\d+:\d+\.\d+$", line)
+        # Following if not statement FOR TESTING ONLY since transcripts from chatgpt have two spaces after every line
+        # Remove these lines for final submission that only works with microsoft teams transcripts
         if not timestamp_match:
             timestamp_match = re.match(r"^\d+:\d+:\d+\.\d+\s-->\s\d+:\d+:\d+\.\d+\s\s$", line)
         if timestamp_match:
             continue
 
         # Detect speaker line and capture full name of speaker
+        # Or statement clause FOR TESTING ONLY, remove for final submission
         if i > 0 and (re.match(r"^[A-Za-z]+\s[A-Za-z]+$", line) or re.match(r"^[A-Za-z]+\s[A-Za-z]+\s\s$", line)):
             current_speaker = line
             continue
@@ -75,9 +130,9 @@ def actionableItems(transcript):
 
     return list(actionable_sentences)
 
-def outputActionableItems (filepath):
-    transcript = docx2txt.process(filepath)
+def outputActionableItems (transcript, filename):
     actionable_sentences = actionableItems(transcript)
-    print("Actionable Sentences Found:")
+    file = open(filename, "a")
     for speaker, sentence in actionable_sentences:
-        print(f"- {speaker}: \"{sentence}\"")
+        file.write(f"- {speaker}: \"{sentence}\"\n")
+    file.close()

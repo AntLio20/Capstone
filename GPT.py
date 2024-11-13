@@ -108,5 +108,10 @@ def gptSummarization(filepath):
         # increase chunk counter to move to the next chunk
         chunkCounter += 1
 
-    # returns the two string arrays
-    return meetingNotesList, sectionHeadings
+    # Displays the organized meeting notes
+    print("----------------------------------------------------")
+    print("Meeting Summary: \n")
+
+    # assigns each section of the meeting notes to the header of each section
+    for heading, note in zip(sectionHeadings, meetingNotesList):
+        print(f"{note}\n")

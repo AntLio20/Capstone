@@ -32,13 +32,14 @@ def chunkToText(transcript, max_token, totalChunks = 0):
     return chunks, totalChunks
 
 
-def gptSummarization(filepath):
+def gptSummarization(transcript, filepath):
     openai.api_key = os.getenv(
         "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")
     # Connecting to OpenAI
     # key = "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"
 
     # initializing a list that will store different parts of the summarized transcript
+    global meetingNotesList
     meetingNotesList = []
     sectionHeadings = ["Opening", "Present", "Absent", "Agenda Approval", "Previous Meeting Approval",
                        "Previous Meeting Summary", "Summary of Meeting", "Adjournment"]
@@ -47,7 +48,7 @@ def gptSummarization(filepath):
     sectionCounter = 0
 
     # converts the document to a string
-    transcript = docx2txt.process(filepath)
+    #transcript = docx2txt.process(filepath)
     max_tokens = 15000
 
     # extracts the date and time of transcript creation for use in minutes and file naming

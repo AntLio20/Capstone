@@ -77,8 +77,11 @@ def actionableItems(transcript):
         [{"LOWER": "verify"}, {"IS_ALPHA": True, "OP": "?"}],
         [{"LOWER": "write"}, {"IS_ALPHA": True, "OP": "?"}]
     ]
-
     matcher.add("ActionableItems", actionable_patterns)
+
+    context_indicators = ["after the meeting", "next session", "later", "next week", "subsequent", "subsquently",
+                          "follow-up", "next meeting", "next month", "tomorrow", "today", "tonight",
+                          "this afternoon", "this evening", "follow up", "deadline", "due date"]
 
     # Initialize variables
     actionable_sentences = set()  # Use a set to avoid duplicates
@@ -124,12 +127,15 @@ def actionableItems(transcript):
                 sentence_text = sentence.text
 
                 # Add (speaker, sentence) tuple only if it hasn't been added already
-                if not actionable_sentence_added:
+                # And check the context of the sentence to see if there are indicators for it being actionable
+                if (not actionable_sentence_added and
+                        any(indicator in sentence_text.lower() for indicator in context_indicators)):
                     actionable_sentences.add((current_speaker, sentence_text))
                     actionable_sentence_added = True
 
     return list(actionable_sentences)
 
+# Output the detected actionable items to a text file
 def outputActionableItems (transcript, filename):
     actionable_sentences = actionableItems(transcript)
     file = open(filename, "a")

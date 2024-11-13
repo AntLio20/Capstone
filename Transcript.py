@@ -132,7 +132,7 @@ class Date:
                 self.weekday = "Sunday"
             case "Mon":
                 self.weekday = "Monday"
-            case "Tues":
+            case "Tue":
                 self.weekday = "Tuesday"
             case "Wed":
                 self.weekday = "Wednesday"

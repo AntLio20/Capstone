@@ -20,7 +20,7 @@ import docx2txt # remove later
 
 
 # this function will run the summarization of our program
-def summarize(filepath, summarizedFileName):
+def summarize(filepath):
 
     redactedTranscript = docx2txt.process(filepath) # remove later
 
@@ -28,8 +28,8 @@ def summarize(filepath, summarizedFileName):
     # gpt.gptSummarization(redactedTranscript, filepath)
 
     # Create file name and generate minutes document and summary terminal output
-    # minutesFilename = Transcript.extractFilenameDate(filepath) + "_minutes.docx" 
-    Minutes.generateMinutes(redactedTranscript, filepath, summarizedFileName)
+    minutesFilename = Transcript.extractFilenameDate(filepath) + "_minutes.docx" 
+    Minutes.generateMinutes(redactedTranscript, filepath, minutesFilename)
 
     # Identify actionable items
     actionableFilename = Transcript.extractFilenameDate(filepath) + "_actions.txt"

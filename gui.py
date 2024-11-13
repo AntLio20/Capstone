@@ -284,26 +284,16 @@ class SummarizationPage(QWidget):
         self.dropBox.setFixedHeight(300)
         self.dropBox.setFixedWidth(300)
 
-        # Adding user input for file name
-        fileNameInput = QLineEdit()
-
-        # styling for the inputs
-        fileNameInput.setStyleSheet("background-color: #000000; color: #7A7A7A; padding: 10px; font-size: 20px;")
-
-        # Setting up placeholder text
-        fileNameInput.setPlaceholderText("File name")
-
         # Creating a button for summarizing
         summarizeButton = QPushButton(text="Summarize", parent=self)
         summarizeButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
         summarizeButton.setFixedWidth(150)
         summarizeButton.setGraphicsEffect(shadow)
-        summarizeButton.clicked.connect(lambda: self.summarize( self.dropBox.text(), (fileNameInput.text() + ".docx")))
+        summarizeButton.clicked.connect(lambda: self.summarize( self.dropBox.text()))
 
         # adding the components to the mainLayout
         mainLayout.addWidget(navBarWidget) 
         mainLayout.addWidget(self.dropBox)
-        mainLayout.addWidget(fileNameInput)
         mainLayout.addWidget(summarizeButton)
         
         # algining the widgets
@@ -336,8 +326,8 @@ class SummarizationPage(QWidget):
             self.dropBox.setText(fileName)
 
     # This function will invoke the summarization component
-    def summarize(self,filename, newFile):
-        pam.summarize(filename, newFile)
+    def summarize(self,filename):
+        pam.summarize(filename)
         self.stack.setCurrentIndex(1)
 
     # this function navigates back to the main page

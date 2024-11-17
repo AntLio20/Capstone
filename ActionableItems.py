@@ -8,6 +8,7 @@
 import spacy
 from spacy.matcher import Matcher
 import re
+from FileSystem import FileSystem
 
 # Load SpaCy English model
 try:
@@ -142,3 +143,5 @@ def outputActionableItems (transcript, filename):
     for speaker, sentence in actionable_sentences:
         file.write(f"- {speaker}: \"{sentence}\"\n")
     file.close()
+    fileSystem = FileSystem()
+    fileSystem.moveFile(filename)

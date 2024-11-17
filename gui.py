@@ -5,13 +5,14 @@
 
 # pip3 install pyqt
 from PyQt5 import QtWidgets 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QGraphicsDropShadowEffect, QGridLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QGraphicsDropShadowEffect, QGridLayout, QScrollArea
 from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 
 import sys
-import FileSystem
+from FileSystem import FileSystem
 import pam
+
 
 # setting up global values
 documentFont = QFont("Times New Roman", 12)  # Default font and font size
@@ -22,6 +23,7 @@ shadow.setBlurRadius(40)
 shadow.setXOffset(10)
 shadow.setYOffset(10)
 shadow.setColor(QColor(0, 0, 0, 100))
+
 
 # this gui allows users to interact and login to their accounts
 class LoginWindow(QWidget):
@@ -126,6 +128,8 @@ class MainPage(QWidget):
 
         self.stack = stack 
 
+        self.fileSystem = FileSystem() # initializing the FileSystem 
+
         # setting the background color
         palette = self.palette()
         palette.setColor(QPalette.Window, QColor('#DFDFDF'))
@@ -167,12 +171,40 @@ class MainPage(QWidget):
         documentsWidget = QWidget()
         documentsWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial;")  
 
-        documentsLayout = QGridLayout(documentsWidget)
-        documentsLayout.setContentsMargins(50, 25, 50, 25)
-        documentsLayout.setSpacing(20)
+        self.documentsLayout = QGridLayout(documentsWidget)
+        self.documentsLayout.setContentsMargins(50, 25, 50, 25)
+        self.documentsLayout.setSpacing(20)
+        
+        # adding in the gridlayout for the documents
+        self.updateDocuments()
+
+        # adding the layouts to the mainLayout
+        mainLayout.addWidget(navBarWidget) 
+        mainLayout.addWidget(documentsWidget) 
+
+        # setting the layout to the window
+        self.setLayout(mainLayout)
+
+    # go to summarize page
+    def navigateSummarize(self):
+        self.stack.setCurrentIndex(2)
+
+    # go to document page
+    def navigateDocument(self, fileName):
+
+        # Send the file name to the DocumentPage
+        self.docPage = DocumentPage(self.stack, fileName)
+        
+        # Adding the DocumentPage to the stack and switching to it
+        self.stack.addWidget(self.docPage)
+        self.stack.setCurrentWidget(self.docPage)
+
+    # updating the gridlayout whenn something has been changed
+    def updateDocuments(self):
 
         # displaying the files that exist in the directory of summarized notes
-        fileAmt = FileSystem.fileAmt
+        self.fileSystem.searchDirectory()
+        fileAmt = self.fileSystem.fileAmt
         row = 0; # variable intialized represents the rows in the grid
         while (fileAmt > 0):
 
@@ -195,42 +227,29 @@ class MainPage(QWidget):
                     documentButton.setStyleSheet("background-color: #CAECF0; border-radius: 0px;")
                     documentButton.setFixedHeight(150)
                     documentButton.setFixedWidth(100)
-
                     documentButton.setGraphicsEffect(shadow)
-                    documentButton.clicked.connect(self.navigateDocument)
                     documentGrid.addWidget(documentButton)
                     documentGrid.setAlignment(documentButton, Qt.AlignCenter)
-
             
                     # displaying the file name
                     fileIndex = (row * 5) + col # getting the file index
-                    fileNameLabel = QLabel(FileSystem.fileNames[fileIndex])
+                    fileName = self.fileSystem.fileNames[fileIndex]
+                    fileNameLabel = QLabel(fileName)
+                    documentButton.clicked.connect( # connecting the button to a function
+                        # by using lambda, we allow the navigation to be only executed on when the button is clicked
+                        lambda _, name=fileName: self.navigateDocument(name)
+                        )
                     documentGrid.addWidget(fileNameLabel)
                     documentGrid.setAlignment(fileNameLabel, Qt.AlignCenter)
 
                     fileAmt = fileAmt - 1 # updating the file amount that is not displayed
 
                     # adding the visualy represented file to the gridlayout
-                    documentsLayout.addWidget(documentGridWidget, row, col)
+                    self.documentsLayout.addWidget(documentGridWidget, row, col)
                 else:
                     break 
             row = row + 1
 
-        
-        # adding the layouts to the mainLayout
-        mainLayout.addWidget(navBarWidget) 
-        mainLayout.addWidget(documentsWidget) 
-
-        # setting the layout to the window
-        self.setLayout(mainLayout)
-
-    # go to summarize page
-    def navigateSummarize(self):
-        self.stack.setCurrentIndex(2)
-
-    # go to document page
-    def navigateDocument(self):
-        self.stack.setCurrentIndex(3)
         
 # this contains the GUI for summarizing a note
 class SummarizationPage(QWidget):
@@ -248,9 +267,9 @@ class SummarizationPage(QWidget):
         # setting up the layout
         mainLayout = QVBoxLayout()
 
-        # navigation bar
+        # this is the nav bar that contains the logo and a back button
         navBarWidget = QWidget()
-        navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")  
+        navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
         navBarWidget.setFixedHeight(150)
         navBarLayout = QHBoxLayout(navBarWidget)
         navBarLayout.setContentsMargins(50, 25, 50, 25)
@@ -288,7 +307,7 @@ class SummarizationPage(QWidget):
         summarizeButton = QPushButton(text="Summarize", parent=self)
         summarizeButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
         summarizeButton.setFixedWidth(150)
-        summarizeButton.setGraphicsEffect(shadow)
+        # summarizeButton.setGraphicsEffect(shadow)
         summarizeButton.clicked.connect(lambda: self.summarize( self.dropBox.text()))
 
         # adding the components to the mainLayout
@@ -328,6 +347,8 @@ class SummarizationPage(QWidget):
     # This function will invoke the summarization component
     def summarize(self,filename):
         pam.summarize(filename)
+        mainPage = self.stack.widget(1)
+        mainPage.updateDocuments() # update the main page to reflect the files in the directory
         self.stack.setCurrentIndex(1)
 
     # this function navigates back to the main page
@@ -337,10 +358,27 @@ class SummarizationPage(QWidget):
 
 # this contains the GUI for opening up a document
 class DocumentPage(QWidget):
-    def __init__(self, stack):
+
+    def __init__(self, stack, fileName = None):
         super().__init__()
 
         self.stack = stack
+
+        fileSystem = FileSystem() # initializing the file system
+
+        # font for titles
+        titleFont = QFont()
+        titleFont.setFamily("Times New Roman")   
+        titleFont.setPointSize(20)     
+        titleFont.setBold(True)   
+
+        headingFont = QFont()
+        headingFont.setFamily("Times New Roman")   
+        headingFont.setPointSize(16)     
+
+        paragraphFont = QFont()
+        paragraphFont.setFamily("Times New Roman")   
+        paragraphFont.setPointSize(11)     
 
         # setting the background color
         palette = self.palette()
@@ -351,16 +389,131 @@ class DocumentPage(QWidget):
         # setting up the layout
         mainLayout = QVBoxLayout()
 
-        pageLayout = QVBoxLayout()
+        # this is the nav bar that contains the logo and a back button
+        navBarWidget = QWidget()
+        navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
+        navBarWidget.setFixedHeight(150)
+        navBarLayout = QHBoxLayout(navBarWidget)
+        navBarLayout.setContentsMargins(50, 25, 50, 25)
 
-        # adding the page to the mainLayout
-        mainLayout.addLayout(pageLayout) 
+        backButton = QPushButton(text="Back", parent=self)
+        backButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
+        backButton.setFixedWidth(150)
+        backButton.setGraphicsEffect(shadow)
+        backButton.clicked.connect(self.navigateHome)
+        navBarLayout.addWidget(backButton)
 
-        # stretching the page layout
-        mainLayout.setStretch(0, 1)  # Left layout
+        # Adding the logo and button
+        logoImageLabel = QLabel(self)
 
+        # Loading the image 
+        logo = QPixmap("./images/pamLogo.png")  
+        logoImageLabel.setPixmap(logo)
+
+        # setting up the size
+        logoImageLabel.setScaledContents(True)
+        logoImageLabel.setFixedHeight(150)
+        logoImageLabel.setFixedWidth(150)
+
+        navBarLayout.addWidget(logoImageLabel)
+       
+        # Setting up the left and right layout that will be containing the document infor
+        documentLayout = QHBoxLayout()
+
+        # setting up the Left layout which will contain the File Specifications and Actionable Items --------------------------
+        leftWidget = QWidget()
+        leftWidget.setStyleSheet(" border-radius: 10px; font-family: Arial; text-align: center;")
+        leftLayout = QVBoxLayout(leftWidget)
+
+        # setting up the file info
+        fileInfoWidget = QWidget()
+        fileInfoWidget.setStyleSheet("background-color: #ffffff; text-align: center; color: #000000")
+        fileInfoLayout = QVBoxLayout(fileInfoWidget)
+
+        # adding the title
+        fileDescriptionTitle = QLabel("File Specifications")
+        fileDescriptionTitle.setFont(titleFont)
+        fileInfoLayout.addWidget(fileDescriptionTitle)
+
+        # adding the Labels for the file descriptors
+        fileNameLabel = QLabel("File name: " + fileName)
+        fileSizeLabel = QLabel("File size: " + fileSystem.getSize(fileName))
+        fileInfoLayout.addWidget(fileNameLabel)
+        fileInfoLayout.addWidget(fileSizeLabel)
+
+        # actionable items setup
+        actionableItemsWidget = QWidget()
+        actionableItemsWidget.setStyleSheet("background-color: #ffffff; text-align: center; color: #000000;")
+        actionableItemsLayout = QVBoxLayout(actionableItemsWidget)
+
+        # adding the title
+        actionableItemsTitle = QLabel("Actiontable Items")
+        actionableItemsTitle.setFont(titleFont)
+        actionableItemsLayout.addWidget(actionableItemsTitle)
+
+        # opening the ActioanableItems txt file
+        actionableItems = []
+        actionableItemFile = fileName.replace("minutes.docx", "actions.txt")
+        actionableItems = fileSystem.getActionableItemsList(actionableItemFile)
+
+        # adding labels onto the actionable items list
+        for item in actionableItems:
+            itemLabel = QLabel(item)
+            itemLabel.setWordWrap(True)
+            actionableItemsLayout.addWidget(itemLabel)
+
+        # adding the sections into the left layout
+        leftLayout.addWidget(fileInfoWidget)
+        leftLayout.addWidget(actionableItemsWidget)
+
+        # -------------------------------------------------------------------------------------
+
+        # ------------------------------ Right Layout START ----------------------------------#
+
+        # creating an area for scrolling
+        scrollArea = QScrollArea()
+        scrollArea.setWidgetResizable(True)
+
+        rightWidget = QWidget();
+        rightWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center; color: #000000;")
+        rightLayout = QVBoxLayout(rightWidget)
+
+        sectionHeadings = fileSystem.sectionHeadings
+        sections = fileSystem.getHeadingsAndContent(fileName)
+
+        for i in range (0, len(sectionHeadings)):
+            headingLabel = QLabel(sections[i][0])
+            headingLabel.setWordWrap(True)
+            headingLabel.setFont(headingFont)
+
+            contentLabel = QLabel(sections[i][1])
+            contentLabel.setWordWrap(True)
+            contentLabel.setFont(paragraphFont)
+
+            # adding the heading and content 
+            rightLayout.addWidget(headingLabel)
+            rightLayout.addWidget(contentLabel)
+
+        # adding the scroll area to the right widget
+        scrollArea.setWidget(rightWidget)
+        # ------------------------------ Right Layout END ----------------------------------#
+
+        # adding the left and right layout to the document layout
+        documentLayout.addWidget(leftWidget)
+        documentLayout.addWidget(scrollArea)
+        documentLayout.setStretch(0, 2)  # Left layout
+        documentLayout.setStretch(1, 3)  # Right layout
+
+        # adding the widgets/ layouts to the mainLayout
+        mainLayout.addWidget(navBarWidget) 
+        mainLayout.addLayout(documentLayout)
+        
         # setting the layout to the window
         self.setLayout(mainLayout)
+
+    # this function navigates back to the main page
+    def navigateHome(self):
+        self.stack.setCurrentIndex(1)        
 
 
 # this class manages the stacked pages
@@ -376,13 +529,11 @@ class MainWindow(QMainWindow):
         self.loginPage = LoginWindow(self.stack)
         self.mainPage = MainPage(self.stack)
         self.summarizationPage = SummarizationPage(self.stack)
-        self.documentPage = DocumentPage(self.stack)
 
         # The way the pages are added to the stack determine thier index
         self.stack.addWidget(self.loginPage) # 0
         self.stack.addWidget(self.mainPage) # 1
         self.stack.addWidget(self.summarizationPage) # 2
-        self.stack.addWidget(self.documentPage) # 3
 
         # Set the stacked widget as the central widget of QMainWindow
         self.setCentralWidget(self.stack)

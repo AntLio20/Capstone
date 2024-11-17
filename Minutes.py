@@ -4,7 +4,7 @@
 
 import GPT
 from docx import Document
-import shutil
+from FileSystem import FileSystem
 
 def generateMinutes(transcript, filepath, minutesFilename):
 
@@ -34,5 +34,5 @@ def generateMinutes(transcript, filepath, minutesFilename):
     summarizedMeetingNotes.save(minutesFilename)
 
     # moving the file to the summarized meetings directory
-    #meetingNotesFileDirectory = "./MeetingNotes"
-    #shutil.move( (minutesFilename + ".docx"), meetingNotesFileDirectory) 
+    fileSystem = FileSystem()
+    fileSystem.moveFile(minutesFilename)

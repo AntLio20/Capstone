@@ -2,6 +2,7 @@
 # Authors: Javier Chung, Andy Dai, Antonio Lio, Jason Stuckless
 # Description: Function for creating a minutes document
 
+# pip install python-docx
 import GPT
 from docx import Document
 from FileSystem import FileSystem

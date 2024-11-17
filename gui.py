@@ -1,10 +1,9 @@
 # File Name: pam.py
 # Authors: Javier Chung, Andy Dai, Antonio Lio, Jason Stuckless
 # Date: Oct 26, 2024
-# Description: This is the GUI page 
+# Description: This is the main page containing the GUI
 
 # pip3 install pyqt
-from PyQt5 import QtWidgets 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QGraphicsDropShadowEffect, QGridLayout, QScrollArea
 from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal

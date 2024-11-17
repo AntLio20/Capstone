@@ -1,5 +1,4 @@
 import os
-import docx2txt
 import openai
 import tiktoken
 import Transcript

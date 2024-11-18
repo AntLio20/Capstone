@@ -4,26 +4,18 @@
 
 import ActionableItems
 import Minutes
+import redaction
 import Transcript
+import GPT as gpt
 
 import docx2txt # remove later
-
-
-# HOW IS pam.py CALLING THE GUI AND RETRIEVING THE FILEPATH?????
-# This does not run right now
-
-# Perform transcript redaction
-# redaction currently incomplete, remove comment from line below when complete
-# redactedTranscript = Redaction.redact(filepath)
-
 
 # this function will run the summarization of our program
 def summarize(filepath):
 
-    redactedTranscript = docx2txt.process(filepath) # remove later
+    transcript = docx2txt.process(filepath) # remove later
 
-    # call to create a summaraization of the transcript with GPT
-    # gpt.gptSummarization(redactedTranscript, filepath)
+    redactedTranscript = redaction.redact(transcript)
 
     # Create file name and generate minutes document and summary terminal output
     minutesFilename = Transcript.extractFilenameDate(filepath) + "_minutes.docx" 

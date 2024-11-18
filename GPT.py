@@ -1,4 +1,3 @@
-import os
 import openai
 import tiktoken
 import Transcript
@@ -32,8 +31,6 @@ def chunkToText(transcript, max_token, totalChunks = 0):
 
 
 def gptSummarization(transcript, filepath):
-    openai.api_key = os.getenv(
-        "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")
     # Connecting to OpenAI
     # key = "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"
 

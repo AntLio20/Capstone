@@ -11,6 +11,12 @@ from PyQt5.QtCore import Qt, pyqtSignal
 import sys
 from FileSystem import FileSystem
 import pam
+import os
+import openai
+
+# connecting to openai
+openai.api_key = os.getenv(
+    "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")
 
 
 # setting up global values
@@ -186,6 +192,8 @@ class MainPage(QWidget):
 
     # go to summarize page
     def navigateSummarize(self):
+        sumPage = self.stack.widget(2)
+        sumPage.resetFileInput() # rest the summarization page
         self.stack.setCurrentIndex(2)
 
     # go to document page
@@ -294,29 +302,16 @@ class SummarizationPage(QWidget):
 
         navBarLayout.addWidget(logoImageLabel)
 
-        # creating a label where the user can drag and drop files to summarize
-        self.setAcceptDrops(True) # allows drags and drops
-        self.dropBox = QLabel("Drop File Here", self)
-        self.dropBox.setStyleSheet("border: 3px dashed #000000; font-size: 20px;")
-        self.dropBox.setAlignment(Qt.AlignCenter)
-        self.dropBox.setFixedHeight(300)
-        self.dropBox.setFixedWidth(300)
-
-        # Creating a button for summarizing
-        summarizeButton = QPushButton(text="Summarize", parent=self)
-        summarizeButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
-        summarizeButton.setFixedWidth(150)
-        # summarizeButton.setGraphicsEffect(shadow)
-        summarizeButton.clicked.connect(lambda: self.summarize( self.dropBox.text()))
+        self.resetFileInput()
 
         # adding the components to the mainLayout
         mainLayout.addWidget(navBarWidget) 
         mainLayout.addWidget(self.dropBox)
-        mainLayout.addWidget(summarizeButton)
+        mainLayout.addWidget(self.summarizeButton)
         
         # algining the widgets
         mainLayout.setAlignment(self.dropBox, Qt.AlignCenter)
-        mainLayout.setAlignment(summarizeButton, Qt.AlignCenter)
+        mainLayout.setAlignment(self.summarizeButton, Qt.AlignCenter)
 
         # setting the layout to the window
         self.setLayout(mainLayout)
@@ -353,6 +348,28 @@ class SummarizationPage(QWidget):
     # this function navigates back to the main page
     def navigateHome(self):
         self.stack.setCurrentIndex(1)
+
+    # this will reset the file input for the drop box
+    def resetFileInput(self):
+        # if the drop box has already been created than we reset the text
+        if hasattr(self, 'dropBox'):
+            self.dropBox.setText("Drop File Here")
+        else:
+            # creating a label where the user can drag and drop files to summarize
+            self.setAcceptDrops(True) # allows drags and drops
+            self.dropBox = QLabel("Drop File Here", self)
+            self.dropBox.setWordWrap(True)
+            self.dropBox.setStyleSheet("border: 3px dashed #000000; font-size: 20px;")
+            self.dropBox.setAlignment(Qt.AlignCenter)
+            self.dropBox.setFixedHeight(300)
+            self.dropBox.setFixedWidth(300)
+
+            # Creating a button for summarizing
+            self.summarizeButton = QPushButton(text="Summarize", parent=self)
+            self.summarizeButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
+            self.summarizeButton.setFixedWidth(150)
+            # summarizeButton.setGraphicsEffect(shadow)
+            self.summarizeButton.clicked.connect(lambda: self.summarize(self.dropBox.text()))
 
 
 # this contains the GUI for opening up a document
@@ -547,10 +564,3 @@ window = MainWindow()
 window.show()
 
 sys.exit(app.exec_())
-
-
-
-
-
-
-

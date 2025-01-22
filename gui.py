@@ -212,13 +212,14 @@ class MainPage(QWidget):
         # displaying the files that exist in the directory of summarized notes
         self.fileSystem.searchDirectory()
         fileAmt = self.fileSystem.fileAmt
+
         row = 0; # variable intialized represents the rows in the grid
         while (fileAmt > 0):
 
             for col in range(0,5):
 
                 # only running this code the file size is in range
-                if(col <= fileAmt):
+                if(fileAmt >= 5 or col < fileAmt ):
 
                     # formatting the size of one grid and setting the styling
                     documentGridWidget = QWidget()
@@ -240,22 +241,24 @@ class MainPage(QWidget):
             
                     # displaying the file name
                     fileIndex = (row * 5) + col # getting the file index
+
+                    print("File Index: " + str(fileIndex))
+
                     fileName = self.fileSystem.fileNames[fileIndex]
                     fileNameLabel = QLabel(fileName)
                     documentButton.clicked.connect( # connecting the button to a function
-                        # by using lambda, we allow the navigation to be only executed on when the button is clicked
+                        # by using lambda, we allow the navigation to be only execut\\ed on when the button is clicked
                         lambda _, name=fileName: self.navigateDocument(name)
                         )
                     documentGrid.addWidget(fileNameLabel)
-                    documentGrid.setAlignment(fileNameLabel, Qt.AlignCenter)
-
-                    fileAmt = fileAmt - 1 # updating the file amount that is not displayed
+                    documentGrid.setAlignment(fileNameLabel, Qt.AlignCenter)                        
 
                     # adding the visualy represented file to the gridlayout
                     self.documentsLayout.addWidget(documentGridWidget, row, col)
                 else:
                     break 
-            row = row + 1
+            row = row + 1 # Moving to the next row
+            fileAmt = fileAmt - 5 # Removing files that have been displayed
 
         
 # this contains the GUI for summarizing a note
@@ -333,10 +336,9 @@ class SummarizationPage(QWidget):
     # This function is a built in function to react to a drop event
     def dropEvent(self, event):
         if event.mimeData().hasUrls():
-            filepath = event.mimeData().urls()[0].toLocalFile()
-            fileName = filepath.split('/')[-1] # splitting the file path by '/' and getting the last element
+            fileName = event.mimeData().urls()[0].toLocalFile()
             event.setDropAction(Qt.CopyAction)
-            self.dropBox.setText(fileName)
+            self.dropBox.setText(fileName.split('/')[-1])
 
     # This function will invoke the summarization component
     def summarize(self,filename):

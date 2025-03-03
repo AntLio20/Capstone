@@ -361,7 +361,7 @@ def generate_fallback_minutes(dialogue, attendees, date_time):
 
     return minutes
 
-def process_transcript(transcript_path, output_dir="output"):
+def process_transcript(transcript_path, output_dir="MeetingNotes"):
     """Process transcript and generate clean meeting minutes"""
     # Initialize progress tracker
     progress_tracker = ProgressTracker(total_steps=5)

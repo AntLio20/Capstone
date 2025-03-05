@@ -63,8 +63,8 @@ def transcribeAndDiarize():
 
         text = Transcriber.transcribeAudio(audio, frameRate, startTime, endTime)
 
-        doc.add_paragraph(f"{startTime} --> {endTime}\n")
-        doc.add_paragraph(f"{speaker}\n")
+        doc.add_paragraph(f"{startTime} --> {endTime}")
+        doc.add_paragraph(f"{speaker}")
         doc.add_paragraph(f"{text}\n")
 
     # saving the document

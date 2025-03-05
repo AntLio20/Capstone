@@ -3,7 +3,7 @@
 # Date: Oct 26, 2024
 # Description: This is the main page containing the GUI
 
-# pip3 install pyqt
+# pip install PyQt5
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QGraphicsDropShadowEffect, QGridLayout, QScrollArea
 from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -13,6 +13,8 @@ from FileSystem import FileSystem
 import pam
 import os
 import openai
+import speakerDiarization
+import Recorder
 
 # connecting to openai
 openai.api_key = os.getenv(
@@ -166,11 +168,19 @@ class MainPage(QWidget):
 
         navBarLayout.addWidget(logoImageLabel)
 
+        # adding a summarize button
         summarizeButton = QPushButton(text="Summarize", parent=self)
         summarizeButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
         summarizeButton.setFixedWidth(150)
         summarizeButton.clicked.connect(self.navigateSummarize)
         navBarLayout.addWidget(summarizeButton)
+
+        # adding a buttong to take the user to the record audio page
+        recordButton = QPushButton(text="Record Meeting", parent=self)
+        recordButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
+        recordButton.setFixedWidth(150)
+        recordButton.clicked.connect(self.navigateRecordAudio)
+        navBarLayout.addWidget(recordButton)
 
         # Creating a a gridview to display all summarized documents
         documentsWidget = QWidget()
@@ -196,15 +206,20 @@ class MainPage(QWidget):
         sumPage.resetFileInput() # rest the summarization page
         self.stack.setCurrentIndex(2)
 
+    # go to record audio page
+    def navigateRecordAudio(self):
+        recordAudioPage = self.stack.widget(3)
+        self.stack.setCurrentIndex(3)
+
     # go to document page
     def navigateDocument(self, fileName):
-
         # Send the file name to the DocumentPage
         self.docPage = DocumentPage(self.stack, fileName)
         
         # Adding the DocumentPage to the stack and switching to it
         self.stack.addWidget(self.docPage)
         self.stack.setCurrentWidget(self.docPage)
+
 
     # updating the gridlayout whenn something has been changed
     def updateDocuments(self):
@@ -260,7 +275,88 @@ class MainPage(QWidget):
             row = row + 1 # Moving to the next row
             fileAmt = fileAmt - 5 # Removing files that have been displayed
 
+# this contains the GUI for the main page of our application
+class RecordAudioPage(QWidget):
+
+    record = False;
+
+    def __init__(self, stack):
+        super().__init__()
+
+        self.stack = stack
+
+        # setting the background color
+        palette = self.palette()
+        palette.setColor(QPalette.Window, QColor('#DFDFDF'))
+        self.setPalette(palette)
+        self.setAutoFillBackground(True)
+
+        # setting up the layout
+        mainLayout = QVBoxLayout()
+
+        # this is the nav bar that contains the logo and a back button
+        navBarWidget = QWidget()
+        navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
+        navBarWidget.setFixedHeight(150)
+        navBarLayout = QHBoxLayout(navBarWidget)
+        navBarLayout.setContentsMargins(50, 25, 50, 25)
+
+        backButton = QPushButton(text="Back", parent=self)
+        backButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
+        backButton.setFixedWidth(150)
+        backButton.setGraphicsEffect(shadow)
+        backButton.clicked.connect(self.navigateHome)
+        navBarLayout.addWidget(backButton)
+
+        # Adding the logo and button
+        logoImageLabel = QLabel(self)
+
+        # Loading the image 
+        logo = QPixmap("./images/pamLogo.png")  
+        logoImageLabel.setPixmap(logo)
+
+        # setting up the size
+        logoImageLabel.setScaledContents(True)
+        logoImageLabel.setFixedHeight(150)
+        logoImageLabel.setFixedWidth(150)
+
+        navBarLayout.addWidget(logoImageLabel)
+
+        # adding the components to the mainLayout
+        mainLayout.addWidget(navBarWidget)
+
+        # adding only a record button
+        recordButton = QPushButton(text="Record", parent=self)
+        recordButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
+        recordButton.setFixedWidth(150)
+        recordButton.setGraphicsEffect(shadow)
+        recordButton.clicked.connect(self.recordAudio)
+
+        mainLayout.addWidget(recordButton)
         
+        # # algining the widgets
+        # mainLayout.setAlignment(self.dropBox, Qt.AlignCenter)
+        # mainLayout.setAlignment(self.summarizeButton, Qt.AlignCenter)
+
+        # setting the layout to the window
+        self.setLayout(mainLayout)
+
+
+    # go to summarize page
+    def recordAudio(self):
+        Recorder.recordAudio()
+        filename = speakerDiarization.transcribeAndDiarize()
+        pam.summarize(filename)
+
+        # going back to the main page
+        mainPage = self.stack.widget(1)
+        mainPage.updateDocuments()
+
+    # this function navigates back to the main page
+    def navigateHome(self):
+        self.stack.setCurrentIndex(1)
+
+
 # this contains the GUI for summarizing a note
 class SummarizationPage(QWidget):
     def __init__(self, stack):
@@ -372,7 +468,6 @@ class SummarizationPage(QWidget):
             self.summarizeButton.setFixedWidth(150)
             # summarizeButton.setGraphicsEffect(shadow)
             self.summarizeButton.clicked.connect(lambda: self.summarize(self.dropBox.text()))
-
 
 # this contains the GUI for opening up a document
 class DocumentPage(QWidget):
@@ -547,11 +642,14 @@ class MainWindow(QMainWindow):
         self.loginPage = LoginWindow(self.stack)
         self.mainPage = MainPage(self.stack)
         self.summarizationPage = SummarizationPage(self.stack)
+        self.recordAudioPage = RecordAudioPage(self.stack)
 
         # The way the pages are added to the stack determine thier index
         self.stack.addWidget(self.loginPage) # 0
         self.stack.addWidget(self.mainPage) # 1
         self.stack.addWidget(self.summarizationPage) # 2
+        self.stack.addWidget(self.recordAudioPage) # 2
+
 
         # Set the stacked widget as the central widget of QMainWindow
         self.setCentralWidget(self.stack)

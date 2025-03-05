@@ -127,6 +127,7 @@ def extractFilenameDate (filepath):
     date += ampm
     return date
 
+
 def convertZoom(file_path):
     # Regular expression to parse [Speaker] timestamp format
     pattern = re.compile(r"\[(.*?)\] (\d{2}:\d{2}:\d{2})\n(.*)")

@@ -4,8 +4,9 @@
 # Description: This is the main page containing the GUI
 
 # pip install PyQt5
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QGraphicsDropShadowEffect, QGridLayout, QScrollArea
-from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap
+from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap, QCursor
 from PyQt5.QtCore import Qt, pyqtSignal
 
 import sys
@@ -101,6 +102,7 @@ class LoginWindow(QWidget):
         loginButton = QPushButton(text="Login", parent=self)
         loginButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
         loginButton.setFixedWidth(150)
+        loginButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         loginButton.clicked.connect(self.login)
         layoutRight.addWidget(loginButton) # adding a button
 
@@ -172,6 +174,7 @@ class MainPage(QWidget):
         summarizeButton = QPushButton(text="Summarize", parent=self)
         summarizeButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
         summarizeButton.setFixedWidth(150)
+        summarizeButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         summarizeButton.clicked.connect(self.navigateSummarize)
         navBarLayout.addWidget(summarizeButton)
 
@@ -179,6 +182,7 @@ class MainPage(QWidget):
         recordButton = QPushButton(text="Record Meeting", parent=self)
         recordButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
         recordButton.setFixedWidth(150)
+        recordButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         recordButton.clicked.connect(self.navigateRecordAudio)
         navBarLayout.addWidget(recordButton)
 
@@ -251,6 +255,7 @@ class MainPage(QWidget):
                     documentButton.setFixedHeight(150)
                     documentButton.setFixedWidth(100)
                     documentButton.setGraphicsEffect(shadow)
+                    documentButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
                     documentGrid.addWidget(documentButton)
                     documentGrid.setAlignment(documentButton, Qt.AlignCenter)
             
@@ -262,7 +267,7 @@ class MainPage(QWidget):
                     fileName = self.fileSystem.fileNames[fileIndex]
                     fileNameLabel = QLabel(fileName)
                     documentButton.clicked.connect( # connecting the button to a function
-                        # by using lambda, we allow the navigation to be only execut\\ed on when the button is clicked
+                        # by using lambda, we allow the navigation to be executed when the button is clicked
                         lambda _, name=fileName: self.navigateDocument(name)
                         )
                     documentGrid.addWidget(fileNameLabel)
@@ -305,6 +310,7 @@ class RecordAudioPage(QWidget):
         backButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
         backButton.setFixedWidth(150)
         backButton.setGraphicsEffect(shadow)
+        backButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         backButton.clicked.connect(self.navigateHome)
         navBarLayout.addWidget(backButton)
 
@@ -330,6 +336,7 @@ class RecordAudioPage(QWidget):
         recordButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
         recordButton.setFixedWidth(150)
         recordButton.setGraphicsEffect(shadow)
+        recordButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         recordButton.clicked.connect(self.recordAudio)
 
         mainLayout.addWidget(recordButton)
@@ -384,6 +391,7 @@ class SummarizationPage(QWidget):
         backButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
         backButton.setFixedWidth(150)
         backButton.setGraphicsEffect(shadow)
+        backButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         backButton.clicked.connect(self.navigateHome)
         navBarLayout.addWidget(backButton)
 
@@ -466,6 +474,7 @@ class SummarizationPage(QWidget):
             self.summarizeButton = QPushButton(text="Summarize", parent=self)
             self.summarizeButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
             self.summarizeButton.setFixedWidth(150)
+            self.summarizeButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
             # summarizeButton.setGraphicsEffect(shadow)
             self.summarizeButton.clicked.connect(lambda: self.summarize(self.dropBox.text()))
 
@@ -513,6 +522,7 @@ class DocumentPage(QWidget):
         backButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
         backButton.setFixedWidth(150)
         backButton.setGraphicsEffect(shadow)
+        backButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         backButton.clicked.connect(self.navigateHome)
         navBarLayout.addWidget(backButton)
 

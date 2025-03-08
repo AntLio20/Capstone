@@ -114,24 +114,22 @@ def gptSummarization(transcript, filepath):
         print(f"{note}\n")
 
 # similar to gpt, but will be using the deepseek reasoner 
-def deepSeekSum(filepath):
-    openai.api_key = os.getenv(
-        "") # enter deepSeek API key
+def deepseekAPI(filepath):
+    client = OpenAI(api_key="sk-babbed6e88f6401d91e35ebd5808d5b5", base_url="https://api.deepseek.com")
 
-    # initializing a list that will store different parts of the summarized transcript
     meetingNotesList = []
     sectionHeadings = ["Opening", "Present", "Absent", "Agenda Approval", "Previous Meeting Approval",
-                       "Previous Meeting Summary", "Summary of Meeting", "Adjournment"]
+                       "Previous Meeting Summary", "Summary of Meeting", "Adjournment", "Hallucenation"]
 
     # initializing a counter for each section
     sectionCounter = 0
 
     # converts the document to a string
     transcript = docx2txt.process(filepath)
-    max_tokens = 10000
+    max_tokens = 50000
 
     # extracts the date and time of transcript creation for use in minutes and file naming
-    date = Transcript.extractFormalDate(filepath)
+    # date = Transcript.extractFormalDate(filepath)
 
     # calls function to separate string into chunks each fitting the max tokens
     transcript_chunks, totalChunks = chunkToText(transcript, max_tokens)
@@ -141,17 +139,21 @@ def deepSeekSum(filepath):
     print(f"Summarization Date: " + dt_string + "\n")
     print(f"Your transcript will be split into a total of {totalChunks} chunks\n")
 
+
     # this code below is used to submit a prompt to the OpenAI API, a for loop to go through all chunks
     print("Currently processing each chunk: \n")
     for chunk in transcript_chunks:
         print(f"Chunk number #{chunkCounter}\n")
-        completion = openai.chat.completions.create(
+        response = client.chat.completions.create(
             model="deepseek-reasoner",
             messages=[
-                {"role": "assistant", "content": "You are a highly accurate assistant. Your task is to read the provided transcript and create meeting minutes. The transcript will be sent in chunks to ensure you read every line."},
+                {"role": "system",
+                 "content": "You are a highly accurate assistant. Your task is to read the provided transcript and create meeting minutes. The transcript will be sent in chunks to ensure you read every line. Only use the information provided in the transcript."},
                 {
                     "role": "user",
                     "content": (
+                        "only reply with the answer to each section with the '☺' in between each section\n"
+                        f"(Processing chunk #{chunkCounter}): {chunk}"
                         f"Organize the transcript into different sections "
                         "using '☺' in between each section."
                         "Please format as follows:\n"
@@ -163,22 +165,19 @@ def deepSeekSum(filepath):
                         "6. Summary of last meeting notes and decisions\n"
                         "7. Detailed summary and key points of the topic of the current meeting\n"
                         "8. Adjournment time, bascially the end time\n"
-                        "only reply with the answer to each section with the '☺' in between each section\n"
-                        ""
-                        f"(Processing chunk #{chunkCounter}): {chunk}"
+                        "9. Hallucenation % and your confidence level in it "
+                        "Only use the information provided in the transcript"
                     )
                 }
             ],
-            # this is used to get real time response word for word
-            stream=True,
-            temperature=0.1,
+            stream=False
         )
 
         # Process streaming responses
         response_text = ""
-        for part in completion:
+        for part in response:
             # Access 'content' directly and check if it's not None
-            content = part.choices[0].delta.content
+            content = response.choices[0].message.content
             if content is not None:
                 response_text += content
 
@@ -189,12 +188,7 @@ def deepSeekSum(filepath):
         # increase chunk counter to move to the next chunk
         chunkCounter += 1
 
-    # Displays the organized meeting notes
-    print("----------------------------------------------------")
-    print("Meeting Summary: \n")
-
     # assigns each section of the meeting notes to the header of each section
     for heading, note in zip(sectionHeadings, meetingNotesList):
         print(f"{note}\n")
-    # returns the two string arrays
-    # return meetingNotesList, sectionHeadings
+    #print(response.choices[0].message.content)

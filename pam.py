@@ -2,9 +2,7 @@
 # Authors: Javier Chung, Andy Dai, Antonio Lio, Jason Stuckless
 # Description: Main file for PAM program
 
-import ActionableItems
 import Minutes
-import redaction
 import Transcript
 
 import docx2txt # remove later

@@ -8,6 +8,7 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QGraphicsDropShadowEffect, QGridLayout, QScrollArea
 from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap, QCursor
 from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtWidgets import QMessageBox
 
 import sys
 from FileSystem import FileSystem
@@ -16,6 +17,7 @@ import os
 import openai
 import speakerDiarization
 import Recorder
+from login import LoginSystem
 
 # connecting to openai
 openai.api_key = os.getenv(
@@ -38,24 +40,26 @@ class LoginWindow(QWidget):
     def __init__(self, stack):
         super().__init__()
 
-        self.stack = stack 
+        self.stack = stack
+        self.login_system = LoginSystem()  # Initialize login system
+        self.is_login_mode = True  # Flag to toggle between login and register mode
 
         # Setting the background color of the page
         palette = self.palette()
         palette.setColor(QPalette.Window, QColor('#DFDFDF'))
         self.setPalette(palette)
         self.setAutoFillBackground(True)
-        self.setStyleSheet("QLabel{color: #000000;}") # setting the default text color for all labels
+        self.setStyleSheet("QLabel{color: #000000;}")  # setting the default text color for all labels
 
         # Adding content onto the gui page
-        mainLayout = QHBoxLayout() # setting main layout to be horizontal
+        mainLayout = QHBoxLayout()  # setting main layout to be horizontal
 
         # Setting up the layout on the left side
         layoutLeft = QVBoxLayout()
         logoImageLabel = QLabel(self)
 
-        # Loading the image 
-        logo = QPixmap("./images/pamLogo.png")  
+        # Loading the image
+        logo = QPixmap("./images/pamLogo.png")
         logoImageLabel.setPixmap(logo)
 
         # setting up the size
@@ -67,52 +71,72 @@ class LoginWindow(QWidget):
 
         # setting up the right widget to contain the color
         rightWidget = QWidget()
-        rightWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")  
+        rightWidget.setStyleSheet(
+            "background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
 
         rightWidget.setGraphicsEffect(shadow)
 
         # Setting up the layout on the right side to be vertical
-        layoutRight = QVBoxLayout(rightWidget)
-        layoutRight.setContentsMargins(50, 25, 50, 25)
-        layoutRight.setSpacing(20)
+        self.layoutRight = QVBoxLayout(rightWidget)
+        self.layoutRight.setContentsMargins(50, 25, 50, 25)
+        self.layoutRight.setSpacing(20)
 
-        loginLabel = QLabel("LOGIN")
+        # Create title label for login/register
+        self.loginLabel = QLabel("LOGIN")
         loginFont = QFont("Arial", 40, QFont.Bold)
-        loginLabel.setFont(loginFont)
-        layoutRight.addWidget(loginLabel)
+        self.loginLabel.setFont(loginFont)
+        self.layoutRight.addWidget(self.loginLabel)
 
+        # Create input widgets
         # Setting up input on the GUI
-        self.inputUsername = QLineEdit() # Variable can be used anywhere in class when self is in the front
+        self.inputUsername = QLineEdit()  # Variable can be used anywhere in class when self is in the front
         self.inputPassword = QLineEdit()
+
+        # Email field for registration
+        self.inputEmail = QLineEdit()
+        self.inputEmail.setVisible(False)  # Hidden by default in login mode
 
         # styling for the inputs
         inputStyle = "background-color: #E8E8E8; color: #7A7A7A; padding: 10px; font-size: 20px;"
         self.inputUsername.setStyleSheet(inputStyle)
         self.inputPassword.setStyleSheet(inputStyle)
+        self.inputEmail.setStyleSheet(inputStyle)
 
         # Setting up placeholder text
         self.inputUsername.setPlaceholderText("Username")
         self.inputPassword.setPlaceholderText("Password")
+        self.inputPassword.setEchoMode(QLineEdit.Password)  # Hide password
+        self.inputEmail.setPlaceholderText("Email (optional)")
 
         # adding input for the username and password to the layout
-        layoutRight.addWidget(self.inputUsername) 
-        layoutRight.addWidget(self.inputPassword) 
+        self.layoutRight.addWidget(self.inputUsername)
+        self.layoutRight.addWidget(self.inputPassword)
+        self.layoutRight.addWidget(self.inputEmail)  # Add email field but it's hidden initially
 
-        # creating a button with a text and parent widget
-        loginButton = QPushButton(text="Login", parent=self)
-        loginButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
-        loginButton.setFixedWidth(150)
-        loginButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        loginButton.clicked.connect(self.login)
-        layoutRight.addWidget(loginButton) # adding a button
+        # creating buttons for login and register
+        self.loginButton = QPushButton(text="Login", parent=self)
+        self.loginButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
+        self.loginButton.setFixedWidth(150)
+        self.loginButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        self.loginButton.clicked.connect(self.handle_auth)
+        self.layoutRight.addWidget(self.loginButton)
+
+        # Add "Switch to Register" button
+        self.switchModeButton = QPushButton(text="Create Account", parent=self)
+        self.switchModeButton.setStyleSheet(
+            "background-color: transparent; font-size: 15px; color: #0000FF; padding: 5px; border: none;")
+        self.switchModeButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        self.switchModeButton.clicked.connect(self.toggle_mode)
+        self.layoutRight.addWidget(self.switchModeButton)
 
         # centering elements in the layout
-        layoutRight.setAlignment(Qt.AlignCenter)
-        layoutRight.setAlignment(loginLabel, Qt.AlignCenter)
-        layoutRight.setAlignment(loginButton, Qt.AlignCenter)
+        self.layoutRight.setAlignment(Qt.AlignCenter)
+        self.layoutRight.setAlignment(self.loginLabel, Qt.AlignCenter)
+        self.layoutRight.setAlignment(self.loginButton, Qt.AlignCenter)
+        self.layoutRight.setAlignment(self.switchModeButton, Qt.AlignCenter)
 
         # setting up how the layouts will be constructed and the width of them
-        mainLayout.addLayout(layoutLeft) 
+        mainLayout.addLayout(layoutLeft)
         mainLayout.addWidget(rightWidget)
 
         # first parameter is the layout (added in a mainLayout in order and second is the strech)
@@ -121,14 +145,90 @@ class LoginWindow(QWidget):
 
         self.setLayout(mainLayout)
 
+    def toggle_mode(self):
+        """Toggle between login and register modes"""
+        try:
+            self.is_login_mode = not self.is_login_mode
+
+            # Update UI based on mode
+            if self.is_login_mode:
+                self.loginLabel.setText("LOGIN")
+                self.loginButton.setText("Login")
+                self.switchModeButton.setText("Create Account")
+                self.inputEmail.setVisible(False)
+            else:
+                self.loginLabel.setText("REGISTER")
+                self.loginButton.setText("Register")
+                self.switchModeButton.setText("Back to Login")
+                self.inputEmail.setVisible(True)
+
+            # Clear fields
+            self.inputUsername.clear()
+            self.inputPassword.clear()
+            self.inputEmail.clear()
+        except Exception as e:
+            print(f"Error toggling mode: {e}")
+
+    def handle_auth(self):
+        """Handle both login and registration based on current mode"""
+        try:
+            username = self.inputUsername.text()
+            password = self.inputPassword.text()
+
+            # Basic validation
+            if not username or not password:
+                self.login_system.show_message(
+                    self,
+                    "Error",
+                    "Username and password are required",
+                    QMessageBox.Warning
+                )
+                return
+
+            if self.is_login_mode:
+                # Handle login
+                success, message = self.login_system.authenticate_user(username, password)
+                if success:
+                    # go to next page
+                    self.stack.setCurrentIndex(1)
+                else:
+                    self.login_system.show_message(
+                        self,
+                        "Login Failed",
+                        message,
+                        QMessageBox.Warning
+                    )
+            else:
+                # Handle registration
+                email = self.inputEmail.text()
+                success, message = self.login_system.register_user(username, password, email)
+                if success:
+                    self.login_system.show_message(
+                        self,
+                        "Registration Successful",
+                        "Your account has been created. You can now log in."
+                    )
+                    # Switch back to login mode
+                    self.toggle_mode()
+                else:
+                    self.login_system.show_message(
+                        self,
+                        "Registration Failed",
+                        message,
+                        QMessageBox.Warning
+                    )
+        except Exception as e:
+            print(f"Authentication error: {e}")
+            self.login_system.show_message(
+                self,
+                "Error",
+                "An unexpected error occurred",
+                QMessageBox.Critical
+            )
 
     def login(self):
-        # add logic for checking login
-        print("Login being checked")
-
-        # go to next page
-        self.stack.setCurrentIndex(1)
-
+        """For backward compatibility with existing code"""
+        self.handle_auth()
 
 # this contains the GUI for the main page of our application
 class MainPage(QWidget):

@@ -5,8 +5,8 @@
 
 # pip install PyQt5
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QGraphicsDropShadowEffect, QGridLayout, QScrollArea
-from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap, QCursor
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QSpacerItem, QHBoxLayout, QSizePolicy, QGraphicsDropShadowEffect, QGridLayout, QFrame, QScrollArea
+from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap, QCursor, QIcon
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QMessageBox
 
@@ -33,7 +33,6 @@ shadow.setBlurRadius(40)
 shadow.setXOffset(10)
 shadow.setYOffset(10)
 shadow.setColor(QColor(0, 0, 0, 100))
-
 
 # this gui allows users to interact and login to their accounts
 class LoginWindow(QWidget):
@@ -249,7 +248,7 @@ class MainPage(QWidget):
         # setting up the layout
         mainLayout = QVBoxLayout()
 
-        # Creating the header bar at the top which will inclide the logo and button to summarzie a transcript
+        # Creating the header bar at the top which will inclide the logo and buttons
         navBarWidget = QWidget()
         navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")  
         navBarWidget.setFixedHeight(150)
@@ -260,30 +259,70 @@ class MainPage(QWidget):
         logoImageLabel = QLabel(self)
 
         # Loading the image 
-        logo = QPixmap("./images/pamLogo.png")  
+        logo = QPixmap("./images/pamLogo (1).png")  
         logoImageLabel.setPixmap(logo)
 
         # setting up the size
         logoImageLabel.setScaledContents(True)
-        logoImageLabel.setFixedHeight(150)
-        logoImageLabel.setFixedWidth(150)
+        logoImageLabel.setFixedHeight(130)
+        logoImageLabel.setFixedWidth(175)
 
         navBarLayout.addWidget(logoImageLabel)
 
-        # adding a summarize button
-        summarizeButton = QPushButton(text="Summarize", parent=self)
-        summarizeButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
-        summarizeButton.setFixedWidth(150)
-        summarizeButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        summarizeButton.clicked.connect(self.navigateSummarize)
-        navBarLayout.addWidget(summarizeButton)
+        def createImageButton(image_path, text, click_action):
+            """
+            Creates a QPushButton with an icon above text while keeping a solid background.
+            """
+            # Create a QPushButton without text initially
+            button = QPushButton()
+            button.setFixedSize(150, 100)  # Set button size
 
-        # adding a buttong to take the user to the record audio page
-        recordButton = QPushButton(text="Record Meeting", parent=self)
-        recordButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
-        recordButton.setFixedWidth(150)
-        recordButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        recordButton.clicked.connect(self.navigateRecordAudio)
+            # Create a layout to stack icon and text
+            layout = QVBoxLayout(button)
+            layout.setSpacing(5)  # Space between icon and text
+            layout.setAlignment(QtCore.Qt.AlignCenter)  # Center align content
+
+            # Load the icon as a QLabel
+            iconLabel = QLabel()
+            iconPixmap = QPixmap(image_path).scaled(40, 40, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            iconLabel.setPixmap(iconPixmap)
+            iconLabel.setAlignment(QtCore.Qt.AlignCenter)
+
+            # Create a QLabel for the text
+            textLabel = QLabel(text)
+            textLabel.setAlignment(QtCore.Qt.AlignCenter)
+            textLabel.setStyleSheet("font-size: 15px; color: #000000;")
+
+            # Add widgets to layout
+            layout.addWidget(iconLabel)
+            layout.addWidget(textLabel)
+
+            # Apply the layout to the button
+            button.setLayout(layout)
+
+            # Apply button styles
+            button.setStyleSheet("""
+                QPushButton {
+                    background-color: #ffffff;
+                    border-radius: 8px;
+                    border: none;
+                }
+                QPushButton:hover {
+                    background-color: #E9E9E9;
+                }
+            """)
+
+            # Connect the button action
+            button.clicked.connect(click_action)
+
+            return button
+
+        # Create buttons with images
+        summarizeButton = createImageButton("./images/summarize_icon.png", "Summarize", self.navigateSummarize)
+        recordButton = createImageButton("./images/record_icon.png", "Record Meeting", self.navigateRecordAudio)
+
+        # Add buttons to navbar
+        navBarLayout.addWidget(summarizeButton)
         navBarLayout.addWidget(recordButton)
 
         # Creating a a gridview to display all summarized documents
@@ -323,7 +362,6 @@ class MainPage(QWidget):
         # Adding the DocumentPage to the stack and switching to it
         self.stack.addWidget(self.docPage)
         self.stack.setCurrentWidget(self.docPage)
-
 
     # updating the gridlayout whenn something has been changed
     def updateDocuments(self):
@@ -614,32 +652,64 @@ class DocumentPage(QWidget):
         # this is the nav bar that contains the logo and a back button
         navBarWidget = QWidget()
         navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
-        navBarWidget.setFixedHeight(150)
+        navBarWidget.setFixedHeight(100)
+
+        # Set up the layout for the navbar
         navBarLayout = QHBoxLayout(navBarWidget)
-        navBarLayout.setContentsMargins(50, 25, 50, 25)
+        navBarLayout.setContentsMargins(0, 0, 0, 0)
+        navBarLayout.setSpacing(0)
 
-        backButton = QPushButton(text="Back", parent=self)
-        backButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
-        backButton.setFixedWidth(150)
-        backButton.setGraphicsEffect(shadow)
+        # Create a container layout to keep the button in the top-left
+        backButtonContainer = QVBoxLayout()
+        backButtonContainer.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+        backButtonContainer.setContentsMargins(10, 10, 0, 0)
+
+        # Circular Back Button with Left Arrow Icon
+        backButton = QPushButton(parent=self)
+        backButton.setFixedSize(75, 75)
+        backButton.setStyleSheet("""
+            QPushButton {
+                background-color: #E9E9E9; 
+                font-size: 20px; 
+                color: #000000; 
+            }
+            QPushButton:hover {
+                background-color: #D6D6D6;
+            }
+        """)
         backButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        backButton.setText("←")
+        backButton.setGraphicsEffect(shadow)
         backButton.clicked.connect(self.navigateHome)
-        navBarLayout.addWidget(backButton)
 
-        # Adding the logo and button
+        # Add the button to the top-left layout
+        backButtonContainer.addWidget(backButton)
+
+        # Add the back button container to the navbar layout
+        navBarLayout.addLayout(backButtonContainer)
+
+        # ADD A SPACER TO THE LEFT of the logo
+        navBarLayout.addStretch(1)  # Expands to create even spacing
+
+        # Add the logo and ensure it's properly centered
         logoImageLabel = QLabel(self)
-
-        # Loading the image 
-        logo = QPixmap("./images/pamLogo.png")  
+        logo = QPixmap("./images/pamLogo (1).png")  
         logoImageLabel.setPixmap(logo)
-
-        # setting up the size
         logoImageLabel.setScaledContents(True)
-        logoImageLabel.setFixedHeight(150)
+        logoImageLabel.setFixedHeight(125)
         logoImageLabel.setFixedWidth(150)
 
-        navBarLayout.addWidget(logoImageLabel)
-       
+        # Add the logo and make sure it's centered
+        navBarLayout.addWidget(logoImageLabel, alignment=QtCore.Qt.AlignCenter)
+
+        # Add a space to the right of the logo (same size as left spacer)
+        navBarLayout.addStretch(1)  
+
+        # ADD AN INVISIBLE EMPTY WIDGET TO MATCH THE BACK BUTTON
+        emptyWidget = QWidget()
+        emptyWidget.setFixedSize(60, 50)  # Matches the size of the back button plus the 10 px margin
+        navBarLayout.addWidget(emptyWidget)
+        
         # Setting up the left and right layout that will be containing the document infor
         documentLayout = QHBoxLayout()
 
@@ -650,7 +720,7 @@ class DocumentPage(QWidget):
 
         # setting up the file info
         fileInfoWidget = QWidget()
-        fileInfoWidget.setStyleSheet("background-color: #ffffff; text-align: center; color: #000000")
+        fileInfoWidget.setStyleSheet("background-color: #D1D6D7; text-align: center; color: #000000")
         fileInfoLayout = QVBoxLayout(fileInfoWidget)
 
         # adding the title
@@ -670,7 +740,7 @@ class DocumentPage(QWidget):
         actionableItemsLayout = QVBoxLayout(actionableItemsWidget)
 
         # adding the title
-        actionableItemsTitle = QLabel("Actiontable Items")
+        actionableItemsTitle = QLabel("Actionable Items")
         actionableItemsTitle.setFont(titleFont)
         actionableItemsLayout.addWidget(actionableItemsTitle)
 
@@ -686,8 +756,8 @@ class DocumentPage(QWidget):
             actionableItemsLayout.addWidget(itemLabel)
 
         # adding the sections into the left layout
-        leftLayout.addWidget(fileInfoWidget)
-        leftLayout.addWidget(actionableItemsWidget)
+        leftLayout.addWidget(fileInfoWidget, 1)
+        leftLayout.addWidget(actionableItemsWidget, 3)
 
         # -------------------------------------------------------------------------------------
 
@@ -696,9 +766,46 @@ class DocumentPage(QWidget):
         # creating an area for scrolling
         scrollArea = QScrollArea()
         scrollArea.setWidgetResizable(True)
+        scrollArea.setFrameShape(QFrame.NoFrame)
+        scrollArea.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                border-radius: 10px;
+                background-color: #ffffff;
+            }
+
+            QScrollArea > QWidget {
+                border-radius: 10px;
+                background-color: #ffffff;
+            }
+
+            /* Scrollbar Styling */
+            QScrollBar:vertical {
+                border: none;
+                background: transparent;
+                width: 10px;
+                margin: 2px 5px 2px 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 5px;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                background: none;
+                border: none;
+            }
+        """)
 
         rightWidget = QWidget();
-        rightWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center; color: #000000;")
+        rightWidget.setStyleSheet("""
+            background-color: #ffffff;
+            border-radius: 10px;
+            font-family: Arial;
+            text-align: center;
+            color: #000000;
+            padding-right: 10px; /* Prevents scrollbar from covering corners */
+        """)
+        
         rightLayout = QVBoxLayout(rightWidget)
 
         sectionHeadings = fileSystem.sectionHeadings

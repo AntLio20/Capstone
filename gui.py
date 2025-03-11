@@ -6,8 +6,8 @@
 # pip install PyQt5
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QSpacerItem, QHBoxLayout, QSizePolicy, QGraphicsDropShadowEffect, QGridLayout, QFrame, QScrollArea
-from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap, QCursor, QIcon
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap, QCursor, QIcon, QFontMetrics
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from PyQt5.QtWidgets import QMessageBox
 
 import sys
@@ -363,60 +363,106 @@ class MainPage(QWidget):
         self.stack.addWidget(self.docPage)
         self.stack.setCurrentWidget(self.docPage)
 
-    # updating the gridlayout whenn something has been changed
+    # updating the gridlayout when something has changed
     def updateDocuments(self):
 
         # displaying the files that exist in the directory of summarized notes
         self.fileSystem.searchDirectory()
         fileAmt = self.fileSystem.fileAmt
 
-        row = 0; # variable intialized represents the rows in the grid
-        while (fileAmt > 0):
+        row = 0  # variable initialized represents the rows in the grid
+        while fileAmt > 0:
 
-            for col in range(0,5):
+            for col in range(0, 5):
 
-                # only running this code the file size is in range
-                if(fileAmt >= 5 or col < fileAmt ):
+                # only run this code if file size is in range
+                if fileAmt >= 5 or col < fileAmt:
 
-                    # formatting the size of one grid and setting the styling
+                    # Get file name first
+                    fileIndex = (row * 5) + col
+                    fileName = self.fileSystem.fileNames[fileIndex]
+
+                    # Grey box (container for the file button)
                     documentGridWidget = QWidget()
                     documentGridWidget.setFixedHeight(250)
                     documentGridWidget.setFixedWidth(175)
-                    documentGridWidget.setStyleSheet("background-color: #868686; border-radius: 10px; font-family: Arial; color: #000000;")
+                    documentGridWidget.setStyleSheet("""
+                        QWidget {
+                            background-color: #868686; 
+                            border-radius: 10px; 
+                            font-family: Arial; 
+                            color: #000000;
+                        }
+                        QWidget:hover {
+                            background-color: #777777;
+                        }
+                    """)
 
-                    # setting up the layout for a document and its title
+                    # Setting up the layout for a document and its title
                     documentGrid = QVBoxLayout(documentGridWidget)
+                    documentGrid.setContentsMargins(10, 10, 10, 10)  # Keeps spacing for the inner button
+                    documentGrid.setSpacing(5)
 
-                    # display a visual of a document using a button
-                    documentButton = QPushButton(text="", parent = self)
-                    documentButton.setStyleSheet("background-color: #CAECF0; border-radius: 0px;")
+                    # Blue rectangle (representing document)
+                    documentButton = QPushButton("", parent=documentGridWidget)
+                    documentButton.setStyleSheet("""
+                        QPushButton {
+                            background-color: #CAECF0;
+                            border-radius: 5px;
+                        }
+                        QPushButton:hover {
+                            background-color: #B5DDE0;
+                        }
+                    """)
                     documentButton.setFixedHeight(150)
                     documentButton.setFixedWidth(100)
-                    documentButton.setGraphicsEffect(shadow)
                     documentButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-                    documentGrid.addWidget(documentButton)
-                    documentGrid.setAlignment(documentButton, Qt.AlignCenter)
-            
-                    # displaying the file name
-                    fileIndex = (row * 5) + col # getting the file index
 
-                    print("File Index: " + str(fileIndex))
-
-                    fileName = self.fileSystem.fileNames[fileIndex]
+                    # Filename label
                     fileNameLabel = QLabel(fileName)
-                    documentButton.clicked.connect( # connecting the button to a function
-                        # by using lambda, we allow the navigation to be executed when the button is clicked
-                        lambda _, name=fileName: self.navigateDocument(name)
-                        )
-                    documentGrid.addWidget(fileNameLabel)
-                    documentGrid.setAlignment(fileNameLabel, Qt.AlignCenter)                        
+                    fileNameLabel.setAlignment(Qt.AlignCenter)
+                    fileNameLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+                    fileNameLabel.setFixedWidth(155)
+                    
+                    # Apply proper padding and prevent overflow
+                    fileNameLabel.setStyleSheet("""
+                        font-size: 14px; 
+                        font-weight: bold;
+                        color: #000000;
+                        background-color: transparent;
+                        padding: 5px;
+                        min-width: 155px;
+                        max-width: 155px;
+                    """)
 
-                    # adding the visualy represented file to the gridlayout
+                    # Ensure elided text is calculated correctly per QLabel
+                    def updateElidedText(label, fullText):
+                        available_width = label.width() - 10  # Subtract padding for correct fitting
+
+                        # Only apply elision when width is available
+                        if available_width > 0:
+                            metrics = QFontMetrics(label.font())
+                            elidedText = metrics.elidedText(fullText, Qt.ElideRight, available_width)
+                            label.setText(elidedText)
+
+                    # Call the function per label and ensure updates on resize
+                    updateElidedText(fileNameLabel, fileName)
+                    fileNameLabel.resizeEvent = lambda event, lbl=fileNameLabel, text=fileName: updateElidedText(lbl, text)
+
+                    # Add elements to the layout
+                    documentGrid.addWidget(documentButton, alignment=Qt.AlignCenter)
+                    documentGrid.addWidget(fileNameLabel, alignment=Qt.AlignCenter)
+
+                    # apture click event for the entire grey box
+                    documentGridWidget.mousePressEvent = lambda event, name=fileName: self.navigateDocument(name)
+
+                    # Add widget to the grid layout
                     self.documentsLayout.addWidget(documentGridWidget, row, col)
+
                 else:
                     break 
-            row = row + 1 # Moving to the next row
-            fileAmt = fileAmt - 5 # Removing files that have been displayed
+            row += 1  # Moving to the next row
+            fileAmt -= 5  # Removing files that have been displayed
 
 # this contains the GUI for the main page of our application
 class RecordAudioPage(QWidget):

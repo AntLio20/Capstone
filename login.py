@@ -1,6 +1,3 @@
-# File Name: login.py
-# Authors: [Your Name]
-# Date: March 10, 2025
 # Description: This file handles user authentication and account creation using SQLite
 
 import sqlite3

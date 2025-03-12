@@ -3,29 +3,39 @@
 # Date: Feb 12, 2025
 # Description: This python file transcribes audio segments
 
-# pip install vosk
+# pip install openai-whisper
+# pip install audioSegment
 
-from vosk import Model, KaldiRecognizer
-import json
-
-TRANSCRIPTION_MODEL_PATH = "./TranscriptionModel/vosk-model-en-us-0.22"
+import whisper
+from pydub import AudioSegment
+import os
+import numpy as np
 
 # Loading the transcription model
-voskModel = Model(TRANSCRIPTION_MODEL_PATH)
+TRANSCRIPTION_MODEL_DIR = './TranscriptionModel'
+modelMeduim = whisper.load_model("medium.en", download_root=TRANSCRIPTION_MODEL_DIR) # there is tiny, base, medium, large
+modelBase = whisper.load_model("base.en", download_root=TRANSCRIPTION_MODEL_DIR) # there is tiny, base, medium, large
+modelTiny = whisper.load_model("tiny.en", download_root=TRANSCRIPTION_MODEL_DIR) # there is tiny, base, medium, large
+def transcribeAudio(audio, startTime, endTime, modelType):
 
-def transcribeAudio(audio, frameRate, startTime, endTime):
+    # Converting the times to miliseconds
+    startTime = startTime * 1000
+    endTime = endTime * 1000
 
-    # Creating the KaldiRecognizer with the transcription model
-    rec = KaldiRecognizer(voskModel, frameRate)
+    # Segmenting the frame that the speaker is speaking
+    audioSegment = audio[startTime:endTime]
 
-    # segementing the speakers audio clip
-    audio.setpos(int(startTime * frameRate))  
-    segmentedFrames = int((endTime - startTime) * frameRate)
-    audioSegment = audio.readframes(segmentedFrames)
+    # Converting the audio clip into a numpy array for the model to use
+    audioArray = np.array(audioSegment.get_array_of_samples())
+    # normalizing the array to 16 bit integers (2 ^ 16) as that is what the whisper model expects
+    audioArray = audioArray.astype(np.float32) / (2**15) 
 
-    # Transcribing the audio segment
-    rec.AcceptWaveform(audioSegment)
-    result = json.loads(rec.FinalResult())
-    text = result["text"]
-
-    return text
+    # Performing transcription on the audio segment
+    if (modelType == 0):
+        result = modelMeduim.transcribe(audioArray)
+    elif( modelType == 1):
+        result = modelBase.transcribe(audioArray)
+    elif( modelType == 2):
+        result = modelTiny.transcribe(audioArray)
+    
+    return result["text"]

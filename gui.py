@@ -1,7 +1,5 @@
-<<<<<<< HEAD
-=======
+# File Name: gui.py
 
->>>>>>> 9551b8c3c8e0e2138a23c4eb90245aebfbb0b467
 # File Name: gui.py
 # Authors: Javier Chung, Andy Dai, Antonio Lio, Jason Stuckless
 # Date: Oct 26, 2024
@@ -120,7 +118,18 @@ class LoginWindow(QWidget):
 
         # creating buttons for login and register
         self.loginButton = QPushButton(text="Login", parent=self)
-        self.loginButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
+        self.loginButton.setStyleSheet("""
+            QPushButton {
+                background-color: #E9E9E9;
+                font-size: 15px;
+                color: #000000;
+                padding: 10px;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background-color: #D6D6D6;
+            }
+        """)
         self.loginButton.setFixedWidth(150)
         self.loginButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         self.loginButton.clicked.connect(self.handle_auth)
@@ -235,7 +244,7 @@ class LoginWindow(QWidget):
         """For backward compatibility with existing code"""
         self.handle_auth()
 
- # -------------------------------------- MAIN PAGE ----------------------------------------- #
+# -------------------------------------- MAIN PAGE ----------------------------------------- #
 
 # this contains the GUI for the main page of our application
 class MainPage(QWidget):
@@ -284,6 +293,9 @@ class MainPage(QWidget):
             # Create a QPushButton without text initially
             button = QPushButton()
             button.setFixedSize(150, 100)  # Set button size
+            
+            # Set cursor to pointing hand for better UX
+            button.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
 
             # Create a layout to stack icon and text
             layout = QVBoxLayout(button)
@@ -373,6 +385,9 @@ class MainPage(QWidget):
 
     # updating the gridlayout when something has changed
     def updateDocuments(self):
+        # Clear existing widgets from the grid first to avoid duplicates
+        for i in reversed(range(self.documentsLayout.count())): 
+            self.documentsLayout.itemAt(i).widget().setParent(None)
 
         # displaying the files that exist in the directory of summarized notes
         self.fileSystem.searchDirectory()
@@ -405,6 +420,8 @@ class MainPage(QWidget):
                             background-color: #777777;
                         }
                     """)
+                    # Set the cursor to pointing hand for the entire container
+                    documentGridWidget.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
 
                     # Setting up the layout for a document and its title
                     documentGrid = QVBoxLayout(documentGridWidget)
@@ -429,11 +446,12 @@ class MainPage(QWidget):
                     # Add onclick to the blue button as well
                     documentButton.clicked.connect(lambda checked=False, name=fileName: self.navigateDocument(name))
 
-                    # Filename label
+                    # Filename label with hover cursor
                     fileNameLabel = QLabel(fileName)
                     fileNameLabel.setAlignment(Qt.AlignCenter)
                     fileNameLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
                     fileNameLabel.setFixedWidth(155)
+                    fileNameLabel.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
                     
                     # Apply proper padding and prevent overflow
                     fileNameLabel.setStyleSheet("""
@@ -861,7 +879,7 @@ class SummarizationPage(QWidget):
         
         mainLayout.addWidget(self.dropBox)
         
-        # Add a bit of spacing before the button too
+        # Add a bit of spacing before the button
         mainLayout.addSpacing(10)
         
         mainLayout.addWidget(self.summarizeButton)

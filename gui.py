@@ -875,9 +875,14 @@ class SummarizationPage(QWidget):
         mainLayout.addWidget(navBarWidget) 
         
         # Add spacing between navbar and drop box
-        mainLayout.addSpacing(30)
+        mainLayout.addSpacing(15)
         
         mainLayout.addWidget(self.dropBox)
+
+        # Add spacing between drop box and drop down
+        mainLayout.addSpacing(15)
+
+        mainLayout.addWidget(self.dropdown)
         
         # Add a bit of spacing before the button
         mainLayout.addSpacing(10)
@@ -886,6 +891,7 @@ class SummarizationPage(QWidget):
         
         # aligning the widgets
         mainLayout.setAlignment(self.dropBox, Qt.AlignCenter)
+        mainLayout.setAlignment(self.dropdown, Qt.AlignCenter)
         mainLayout.setAlignment(self.summarizeButton, Qt.AlignCenter)
 
         # setting the layout to the window
@@ -914,7 +920,7 @@ class SummarizationPage(QWidget):
 
     # This function will invoke the summarization component
     def summarize(self,filename):
-        pam.summarize(filename)
+        pam.summarize(filename, self.dropdown.currentIndex())
         mainPage = self.stack.widget(1)
         mainPage.updateDocuments() # update the main page to reflect the files in the directory
         self.stack.setCurrentIndex(1)
@@ -923,6 +929,22 @@ class SummarizationPage(QWidget):
     def navigateHome(self):
         self.stack.setCurrentIndex(1)
 
+    # this function is used to draw a drop down bar
+    def drawDropDown(self):
+        self.dropdown = QComboBox()
+        self.dropdown.addItems(["DeepSeek R1", "DeepSeek API", "OpenAI API"])  
+        self.dropdown.setFixedWidth(self.width() // 4)
+        self.dropdown.setStyleSheet("""
+            QComboBox {
+                background-color: #F5F5F5;
+                color: black;
+                font-size: 16px;
+                border: 2px solid #CCCCCC;
+                border-radius: 10px;
+                padding: 5px;
+            }
+        """)
+        
     # this will reset the file input for the drop box
     def resetFileInput(self):
         # if the drop box has already been created than we reset the text

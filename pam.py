@@ -5,7 +5,7 @@
 import Minutes
 import Transcript
 
-import docx2txt # remove later
+import docx2txt
 
 # this function will run the summarization of our program
 def summarize(filepath, model):
@@ -24,7 +24,18 @@ def summarize(filepath, model):
         print("Invalid Transcript Format")
         transcript = "" # Need to allow for this in GUI with error message and end before summarization
 
-    redactedTranscript = redaction.redact(transcript)
+    # WORK WITH transcript IN THE SUMMARIZATIONS
+
+    # deepseek r1 model for summarization, redaction and actionable items
+    if (model == 0):
+        print("r1 model code")
+    # deepseek api model for summarization, redaction and actionable items
+    elif (model == 1):
+        print("deepseek api model code")
+    # openai api model for summarization, redaction and actionable items
+    elif (model == 2):
+        print("open api model code")
+
 
     # Create file name and generate minutes document and summary terminal output
     minutesFilename = Transcript.extractFilenameDate(filepath) + "_minutes.docx" 

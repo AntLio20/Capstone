@@ -1,6 +1,4 @@
 # File Name: gui.py
-
-# File Name: gui.py
 # Authors: Javier Chung, Andy Dai, Antonio Lio, Jason Stuckless
 # Date: Oct 26, 2024
 # Description: This is the main page containing the GUI
@@ -1243,7 +1241,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.stack)
 
         # setting up the default size of the browser
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(900, 600)
 
 # config setup for Qapplication
 app = QApplication(sys.argv)

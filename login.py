@@ -1,3 +1,6 @@
+# File Name: login.py
+# Authors: Javier Chung, Andy Dai, Antonio Lio, Jason Stuckless
+# Date: Mar 10, 2024
 # Description: This file handles user authentication and account creation using SQLite
 
 import sqlite3

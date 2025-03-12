@@ -7,7 +7,8 @@
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QSpacerItem, QHBoxLayout, QSizePolicy, QGraphicsDropShadowEffect, QGridLayout, QFrame, QScrollArea
 from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap, QCursor, QIcon, QFontMetrics
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QThread
+
 from PyQt5.QtWidgets import QMessageBox
 
 import sys
@@ -467,12 +468,122 @@ class MainPage(QWidget):
             row += 1  # Moving to the next row
             fileAmt -= 5  # Removing files that have been displayed
 
+# ------------------- Record Audio Thread ------------------- #
+class RecorderThread(QThread):
+    # Defining the signals that will be used to send messages to and from the thread
+    recordingFinished = pyqtSignal(str)
+    stopRecording = pyqtSignal()
+    def __init__(self):
+        super().__init__()
+
+    def run(self):
+
+        # Connecting the stopRecording signal to the stopRecording method
+        self.stopRecording.connect(self.stopRecordingMethod)
+
+        # Recording the audio
+        Recorder.recordAudio()
+
+        # Emit signal when recording is finished
+        self.recordingFinished.emit("done")
+
+    def stopRecordingMethod(self):
+        print("Recording stopped")
+        Recorder.setStopRecording(True)
+        
+
+# -------------------------------------- RECORD AUDIO PAGE ----------------------------------------- #
 # this contains the GUI for the main page of our application
 class RecordAudioPage(QWidget):
-
     record = False;
 
     def __init__(self, stack):
+
+        def createImageButton(image_path, text, eventOnClick):
+            """
+            Creates a QPushButton with an icon above text while keeping a solid background.
+            """
+            # Create a QPushButton without text initially
+            button = QPushButton()
+            button.setFixedSize(300, 300) 
+
+            # Tracking Button state to when there is a clicked event
+            button.isRecording = False
+            button.finsishedRecording = False
+            self.recorderThread = None
+
+
+            # Create a layout to stack icon and text
+            layout = QVBoxLayout(button)
+            layout.setSpacing(5)  # Space between icon and text
+            layout.setAlignment(QtCore.Qt.AlignCenter)  # Center align content
+
+            # Load the icon as a QLabel
+            iconLabel = QLabel()
+            iconPixmap = QPixmap(image_path).scaled(100, 100, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            iconLabel.setPixmap(iconPixmap)
+            iconLabel.setAlignment(QtCore.Qt.AlignCenter)
+
+            # Create a QLabel for the text
+            textLabel = QLabel(text)
+            textLabel.setAlignment(QtCore.Qt.AlignCenter)
+            textLabel.setStyleSheet("font-size: 30px; color: #000000;")
+
+            # Add widgets to layout
+            layout.addWidget(iconLabel)
+            layout.addWidget(textLabel)
+
+            # Apply the layout to the button
+            button.setLayout(layout)
+
+            # Apply button styles
+            button.setStyleSheet("""
+                QPushButton {
+                    background-color: #ffffff;
+                    border-radius: 8px;
+                    border: none;
+                }
+                QPushButton:hover {
+                    background-color: #E9E9E9;
+                }
+            """)
+        
+        # This method will change the color of the button when it is pressed
+            def toggleColor():
+                if button.isRecording:
+                    button.isRecording = False
+                    button.setStyleSheet("""
+                        QPushButton {
+                            background-color: #ffffff;
+                            border-radius: 8px;
+                            border: none;
+                        }
+                        QPushButton:hover {
+                            background-color: #E9E9E9;
+                        }
+                    """)
+                    button.finsishedRecording = True
+                else:
+                    button.isRecording = True
+
+                    button.setStyleSheet("""
+                        QPushButton {
+                            background-color: red;
+                            border-radius: 8px;
+                            border: none;
+                        }
+                    """)
+
+                # Call the provided event function
+                eventOnClick(button.isRecording, button.finsishedRecording)
+
+                button.finsishedRecording = False
+
+            # connected the button to the nest method to change the color which will then connect it to the main method of recording
+            button.clicked.connect(toggleColor)
+
+            return button
+
         super().__init__()
 
         self.stack = stack
@@ -486,6 +597,7 @@ class RecordAudioPage(QWidget):
         # setting up the layout
         mainLayout = QVBoxLayout()
 
+        # -------------------- NAVBAR ----------------------- #
         # this is the nav bar that contains the logo and a back button
         navBarWidget = QWidget()
         navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
@@ -515,39 +627,118 @@ class RecordAudioPage(QWidget):
 
         navBarLayout.addWidget(logoImageLabel)
 
-        # adding the components to the mainLayout
+        # Add a space to the right of the logo (same size as left spacer)
+        navBarLayout.addStretch(1)  
+
+        # ADD AN INVISIBLE EMPTY WIDGET TO MATCH THE BACK BUTTON
+        emptyWidget = QWidget()
+        emptyWidget.setFixedSize(60, 50)  # Matches the size of the back button plus the 10 px margin
+        navBarLayout.addWidget(emptyWidget)
+
+        # ------------------------------------------------------ #
+
+        # -------------------- Recording Layout where the user can select record ---------------------- #
+
+        # Create a QWidget container for styling
+        recordWidget = QWidget()
+        recordWidget.setStyleSheet("""
+            QWidget {
+                background-color: #ffffff;  /* Grey background */
+                border-radius: 10px;        /* Rounded corners */
+                font-family: Arial;
+                text-align: center;
+            }
+        """)
+
+        recordWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+
+        # Creating the layout for the record button section
+        recordLayout = QVBoxLayout(recordWidget)
+        recordLayout.setAlignment(Qt.AlignCenter)
+
+        # Create buttons with images
+        self.recordButton = createImageButton("./images/record_icon.png", "Record Meeting", self.recordAudio)
+        self.recordButton.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # Add the button to the layout
+        recordLayout.addWidget(self.recordButton, alignment=Qt.AlignCenter)
+
+        # Adding components to mainLayout
         mainLayout.addWidget(navBarWidget)
+        mainLayout.addWidget(recordWidget)
 
-        # adding only a record button
-        recordButton = QPushButton(text="Record", parent=self)
-        recordButton.setStyleSheet("background-color: #E9E9E9; font-size: 15px; color: #000000; padding: 10px;")
-        recordButton.setFixedWidth(150)
-        recordButton.setGraphicsEffect(shadow)
-        recordButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        recordButton.clicked.connect(self.recordAudio)
-
-        mainLayout.addWidget(recordButton)
-        
-        # # algining the widgets
-        # mainLayout.setAlignment(self.dropBox, Qt.AlignCenter)
-        # mainLayout.setAlignment(self.summarizeButton, Qt.AlignCenter)
-
-        # setting the layout to the window
+        # Set the layout to the window
         self.setLayout(mainLayout)
 
+    # Recording the audio through a thread
+    def recordAudio(self, isRecording, finishedRecording):
+        if not self.recorderThread or not self.recorderThread.isRunning():
+            self.recorderThread = RecorderThread()
 
-    # go to summarize page
-    def recordAudio(self):
-        Recorder.recordAudio()
-        filename = speakerDiarization.transcribeAndDiarize()
-        pam.summarize(filename)
+        # If the thread is finished executing, it will execute this method
+        self.recorderThread.recordingFinished.connect(self.handleRecordingFinished)
+        
+        # Connect the stopRecording signal to a method that will stop the recording
+        self.recorderThread.stopRecording.connect(self.stopRecording)
 
-        # going back to the main page
-        mainPage = self.stack.widget(1)
-        mainPage.updateDocuments()
+        # Starting the recording thread
+        self.recorderThread.start()
+
+        if (not isRecording and finishedRecording):
+            print("send signal to stop thread")
+            # Emit the stopRecording signal to stop the thread
+            self.recorderThread.stopRecording.emit()
+            Recorder.setStopRecording(True)
+
+    def stopRecording(self):
+        print("Recording is stopping now...")
+        Recorder.setStopRecording(True)
+
+    # this method will create the transcript and display a popup
+    def handleRecordingFinished(self, status):
+
+        # disconnecting the signal
+        try:
+            self.recorderThread.recordingFinished.disconnect(self.handleRecordingFinished)
+            self.recorderThread.stopRecording.disconnect(self.stopRecording)
+        except Exception as e:
+            print("Signals already disconnected or error during disconnect:", e)
+
+        filepath = speakerDiarization.transcribeAndDiarize()
+
+        speakerDiarization.deleteAudioFile()
+        # have a pop up saying transcript created in {folder}
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText(f"Transcript Successfully Created at filepath:{filepath}!")
+        msg.setWindowTitle("Recording Finished")
+        msg.exec_()
 
     # this function navigates back to the main page
     def navigateHome(self):
+
+        # Clearing the recording if there was a recording in progress
+        if self.recorderThread and self.recorderThread.isRunning():
+            self.recorderThread.stopRecording.emit()
+
+            # Waiting until the thread is finished
+            Recorder.setStopRecording(True)            
+            self.recorderThread.wait()
+
+        # resetting the button so that it is not red and recording is set to false
+        self.recordButton.isRecording = False
+        self.recordButton.setStyleSheet("""
+            QPushButton {
+                background-color: #ffffff;
+                border-radius: 8px;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #E9E9E9;
+            }
+        """)
+
         self.stack.setCurrentIndex(1)
 
 

@@ -28,6 +28,9 @@ def recordAudio():
 
     print("Currently Recording...")
 
+    setStopRecording(False)
+
+
     frames = []
 
     isRecording.set() # starting the recording proccess by setting the state to true which signals thread to continue running
@@ -40,6 +43,9 @@ def recordAudio():
     while isRecording.is_set():
         data = stream.read(CHUNK)
         frames.append(data)
+
+    # Ensure the intruptThread has finished before proceeding
+    intruptThread.join()
 
     print("DONE RECORDING...")
 
@@ -58,10 +64,19 @@ def recordAudio():
 # this function uses another thread to poll a keyboard input that will end the recording of a user
 def isDoneRecording():
     while isRecording.is_set():
-        recordAnswer = str(input("Press n to stop recording: "))
 
-        if (recordAnswer == "n"):
+        if(getStopRecording() == True):
             isRecording.clear() # finishing execution of the thread and clearing state
+
+            
+def getStopRecording():
+    return stopRecording
+
+def setStopRecording(isStop):
+    global stopRecording
+    stopRecording = isStop
+
+stopRecording = False
 
 # Declaring a variable that creates an event object that a thread can track
 isRecording = threading.Event() # set to cleared state

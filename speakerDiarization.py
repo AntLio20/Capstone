@@ -29,12 +29,19 @@ import os
 from docx import Document
 import wave
 import Transcriber
+from datetime import datetime
+import logging
 
 # Defining global static variables
 AUDIO_FILE = "tmpRecording.wav"
 DIARIZATION_MODEL_CACHE_DIR = "./DiarizationModel"
 
 def transcribeAndDiarize():
+
+    # Setting the file path to the desktop of the host OS
+    desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filepath = os.path.join(desktop, f"{timestamp}-transcript.docx")
 
     totalStartTime = time.time()
 
@@ -68,20 +75,24 @@ def transcribeAndDiarize():
         doc.add_paragraph(f"{text}\n")
 
     # saving the document
-    doc.save("tmpTranscript.docx")
+    doc.save(filepath)
 
     totalEndTime = time.time()
 
     elapsedtotaltimeMin = (int)((totalEndTime - totalStartTime)//60)
     elapsedTotalTimeSec = (int)(math.ceil((totalEndTime - totalStartTime)%60))
 
-    # deleting the audio file as it is no longer needed
+    print(f"Finished Creating Transcript with time of {elapsedtotaltimeMin} mins and {elapsedTotalTimeSec} secs")
+
+    return(filepath)
+
+# deleting the audio file as it is no longer needed
+def deleteAudioFile():
     if os.path.exists(AUDIO_FILE):
         os.remove(AUDIO_FILE)
 
-    print(f"Finished Creating Transcript with time of {elapsedtotaltimeMin} mins and {elapsedTotalTimeSec} secs")
-
-    return "tmpTranscript.docx"
+# muting all the logs 
+logging.getLogger("speechbrain").setLevel(logging.ERROR)
 
 # Authenticating with Hugging Face
 login(token = "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")

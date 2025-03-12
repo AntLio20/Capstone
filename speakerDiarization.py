@@ -34,11 +34,10 @@ import logging
 from pydub import AudioSegment
 
 # Defining global static variables
-AUDIO_FILE = "tmpRecording.wav"
 DIARIZATION_MODEL_CACHE_DIR = "./DiarizationModel"
 TRANSCRIPT_DIR = "./diarizedTranscripts"
 
-def transcribeAndDiarize(modelType):
+def transcribeAndDiarize(modelType, file):
 
     # Setting the file path to the desktop of the host OS
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -49,7 +48,7 @@ def transcribeAndDiarize(modelType):
     # applying pretrained pipeline to the audio clip
     print("loading audio file into diarization model...:\n")
     loadingStartTime = time.time()
-    diarization = pipeline({"audio": AUDIO_FILE})
+    diarization = pipeline({"audio": file})
     loadingEndTime = time.time()
     elapsedLoadingtimeMin = int((loadingEndTime - loadingStartTime)//60)
     elapsedLoadingTimeSec = int(math.ceil((loadingEndTime - loadingStartTime)%60))
@@ -59,7 +58,7 @@ def transcribeAndDiarize(modelType):
     doc = Document()
     
     # Opening the audio file to enable segmenting
-    audio = AudioSegment.from_file(AUDIO_FILE)
+    audio = AudioSegment.from_file(file)
 
     # converting the audio clip into a trascription
     for turn, _, speaker in diarization.itertracks(yield_label=True):
@@ -87,9 +86,9 @@ def transcribeAndDiarize(modelType):
     return(filepath)
 
 # deleting the audio file as it is no longer needed
-def deleteAudioFile():
-    if os.path.exists(AUDIO_FILE):
-        os.remove(AUDIO_FILE)
+def deleteAudioFile(file):
+    if os.path.exists(file):
+        os.remove(file)
 
 # muting all the logs 
 logging.getLogger("speechbrain").setLevel(logging.ERROR)

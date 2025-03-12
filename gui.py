@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9551b8c3c8e0e2138a23c4eb90245aebfbb0b467
 # File Name: gui.py
 # Authors: Javier Chung, Andy Dai, Antonio Lio, Jason Stuckless
 # Date: Oct 26, 2024

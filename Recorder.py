@@ -4,15 +4,17 @@
 # Description: This python file is used to record live audio
 
 # libraries needed 
-# (MAC) brew install portaudio
+# brew install portaudio
 # pip install pyaudio
 
 import wave
 import pyaudio
 import threading
+from datetime import datetime
 
 def recordAudio():
-    filename = "tmpRecording.wav"
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"{timestamp}-tmpRecording.wav"
     CHUNK = 1024
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
@@ -60,6 +62,8 @@ def recordAudio():
     waveFile.setframerate(RATE)
     waveFile.writeframes(b''.join(frames))
     waveFile.close()
+
+    return(filename)
 
 # this function uses another thread to poll a keyboard input that will end the recording of a user
 def isDoneRecording():

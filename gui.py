@@ -502,17 +502,16 @@ class RecorderThread(QThread):
     stopRecording = pyqtSignal()
     def __init__(self):
         super().__init__()
-
-    def run(self):
-
         # Connecting the stopRecording signal to the stopRecording method
         self.stopRecording.connect(self.stopRecordingMethod)
+        
+    def run(self):
 
         # Recording the audio
-        Recorder.recordAudio()
+        filename = Recorder.recordAudio()
 
         # Emit signal when recording is finished
-        self.recordingFinished.emit("done")
+        self.recordingFinished.emit(filename)
 
     def stopRecordingMethod(self):
         print("Recording stopped")
@@ -568,7 +567,7 @@ class RecordAudioPage(QWidget):
                 QPushButton {
                     background-color: #ffffff;
                     border-radius: 8px;
-                    border: none;
+                    border: 2px solid black;
                 }
                 QPushButton:hover {
                     background-color: #E9E9E9;
@@ -583,7 +582,7 @@ class RecordAudioPage(QWidget):
                         QPushButton {
                             background-color: #ffffff;
                             border-radius: 8px;
-                            border: none;
+                            border: 2px solid black;
                         }
                         QPushButton:hover {
                             background-color: #E9E9E9;
@@ -597,7 +596,7 @@ class RecordAudioPage(QWidget):
                         QPushButton {
                             background-color: red;
                             border-radius: 8px;
-                            border: none;
+                            border: 2px solid black;
                         }
                     """)
 
@@ -688,15 +687,32 @@ class RecordAudioPage(QWidget):
         recordWidget = QWidget()
         recordWidget.setStyleSheet("""
             QWidget {
-                background-color: #ffffff;  /* Grey background */
-                border-radius: 10px;        /* Rounded corners */
+                background-color: #ffffff;  
+                border-radius: 10px;        
                 font-family: Arial;
                 text-align: center;
+                padding-top: 10px;
             }
         """)
 
         recordWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+
+        # Creating a label with specified settings
+        # style sheet - bold, size and color
+        # static width and dynamic height for word wrapping
+        self.instructionLabel = QLabel("   When Recording, Get Each Speaker to introduce themselves with the format of 'Hi, I am <First Name> <Last Name>' to register speaker names ")
+        self.instructionLabel.setStyleSheet("""
+            font-size: 16px;
+            color: black;
+            font-weight: bold;
+            background-color: #FFFACD;  
+            border: 2px solid #FFD700; 
+            padding: 5px;  
+        """)
+        self.instructionLabel.setFixedWidth(self.width() // 2)
+        self.instructionLabel.setWordWrap(True)  # Enable word wrapping
+        self.instructionLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         # Creating the layout for the record button section
         recordLayout = QVBoxLayout(recordWidget)
@@ -709,11 +725,16 @@ class RecordAudioPage(QWidget):
         self.drawDropDown()
 
         # Add the button to the layout
+
+        recordLayout.addWidget(self.instructionLabel, alignment=Qt.AlignCenter)
+        recordLayout.addSpacing(20)
+
         recordLayout.addWidget(self.dropdown, alignment=Qt.AlignCenter)
+        recordLayout.addSpacing(10)
+
         recordLayout.addWidget(self.recordButton, alignment=Qt.AlignCenter)
 
         # Adding components to mainLayout
-
         mainLayout.addWidget(navBarWidget)
         mainLayout.addWidget(recordWidget)
 
@@ -745,7 +766,7 @@ class RecordAudioPage(QWidget):
         Recorder.setStopRecording(True)
 
     # this method will create the transcript and display a popup
-    def handleRecordingFinished(self, status):
+    def handleRecordingFinished(self, recordedFile):
 
         # disconnecting the signal
         try:
@@ -754,9 +775,9 @@ class RecordAudioPage(QWidget):
         except Exception as e:
             print("Signals already disconnected or error during disconnect:", e)
 
-        filepath = speakerDiarization.transcribeAndDiarize(self.dropdown.currentIndex())
+        filepath = speakerDiarization.transcribeAndDiarize(self.dropdown.currentIndex(), recordedFile)
 
-        speakerDiarization.deleteAudioFile()
+        speakerDiarization.deleteAudioFile(recordedFile)
         # have a pop up saying transcript created in {folder}
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
@@ -768,7 +789,7 @@ class RecordAudioPage(QWidget):
     def drawDropDown(self):
         self.dropdown = QComboBox()
         self.dropdown.addItems(["Medium en (Accurate)", "Base en (Moderate)", "Tiny en (Fast)"])  
-        self.dropdown.setFixedWidth(self.width() // 4)
+        self.dropdown.setFixedWidth(self.width() // 2)
         self.dropdown.setStyleSheet("""
             QComboBox {
                 background-color: #F5F5F5;

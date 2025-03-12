@@ -706,10 +706,14 @@ class RecordAudioPage(QWidget):
         self.recordButton = createImageButton("./images/record_icon.png", "Record Meeting", self.recordAudio)
         self.recordButton.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+        self.drawDropDown()
+
         # Add the button to the layout
+        mainLayout.setAlignment(self.dropdown, Qt.AlignCenter)
         recordLayout.addWidget(self.recordButton, alignment=Qt.AlignCenter)
 
         # Adding components to mainLayout
+
         mainLayout.addWidget(navBarWidget)
         mainLayout.addWidget(recordWidget)
 
@@ -750,7 +754,7 @@ class RecordAudioPage(QWidget):
         except Exception as e:
             print("Signals already disconnected or error during disconnect:", e)
 
-        filepath = speakerDiarization.transcribeAndDiarize()
+        filepath = speakerDiarization.transcribeAndDiarize(self.dropdown.currentIndex())
 
         speakerDiarization.deleteAudioFile()
         # have a pop up saying transcript created in {folder}
@@ -759,6 +763,22 @@ class RecordAudioPage(QWidget):
         msg.setText(f"Transcript Successfully Created at filepath:{filepath}!")
         msg.setWindowTitle("Recording Finished")
         msg.exec_()
+
+    # this function is used to draw a drop down bar
+    def drawDropDown(self):
+        self.dropdown = QComboBox()
+        self.dropdown.addItems(["Medium en", "Base en", "Tiny en"])  
+        self.dropdown.setFixedWidth(self.width() // 4)
+        self.dropdown.setStyleSheet("""
+            QComboBox {
+                background-color: #F5F5F5;
+                color: black;
+                font-size: 16px;
+                border: 2px solid #CCCCCC;
+                border-radius: 10px;
+                padding: 5px;
+            }
+        """)
 
     # this function navigates back to the main page
     def navigateHome(self):

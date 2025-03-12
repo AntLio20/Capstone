@@ -63,7 +63,6 @@ class FileSystem:
         destinationFilePath = os.path.join(self.fileDirectory, fileName)
         minutesDoc = docx2txt.process(destinationFilePath) # reading the document
 
-
         # matches a number (d) and . with any text behind it untill a new line
         # the (.*?) gets the content up untill the next number and .
         headings = r"(\d+\.\s+[^\n]+)(.*?)(?=\n\d+\.\s|$)" 

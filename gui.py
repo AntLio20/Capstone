@@ -417,6 +417,9 @@ class MainPage(QWidget):
                     documentButton.setFixedHeight(150)
                     documentButton.setFixedWidth(100)
                     documentButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+                    
+                    # Add onclick to the blue button as well
+                    documentButton.clicked.connect(lambda checked=False, name=fileName: self.navigateDocument(name))
 
                     # Filename label
                     fileNameLabel = QLabel(fileName)
@@ -437,7 +440,7 @@ class MainPage(QWidget):
 
                     # Ensure elided text is calculated correctly per QLabel
                     def updateElidedText(label, fullText):
-                        available_width = label.width() - 10  # Subtract padding for correct fitting
+                        available_width = label.width() - 20  # Subtract padding for correct fitting
 
                         # Only apply elision when width is available
                         if available_width > 0:
@@ -453,7 +456,7 @@ class MainPage(QWidget):
                     documentGrid.addWidget(documentButton, alignment=Qt.AlignCenter)
                     documentGrid.addWidget(fileNameLabel, alignment=Qt.AlignCenter)
 
-                    # apture click event for the entire grey box
+                    # Keep the click event for the entire grey box
                     documentGridWidget.mousePressEvent = lambda event, name=fileName: self.navigateDocument(name)
 
                     # Add widget to the grid layout
@@ -669,6 +672,7 @@ class DocumentPage(QWidget):
         super().__init__()
 
         self.stack = stack
+        self.fileName = fileName
 
         fileSystem = FileSystem() # initializing the file system
 
@@ -695,7 +699,7 @@ class DocumentPage(QWidget):
         # setting up the layout
         mainLayout = QVBoxLayout()
 
-        # this is the nav bar that contains the logo and a back button
+        # ----------------------------- Navbar START ----------------------------- #
         navBarWidget = QWidget()
         navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
         navBarWidget.setFixedHeight(100)
@@ -705,12 +709,11 @@ class DocumentPage(QWidget):
         navBarLayout.setContentsMargins(0, 0, 0, 0)
         navBarLayout.setSpacing(0)
 
-        # Create a container layout to keep the button in the top-left
+        # Back Button (Top Left)
         backButtonContainer = QVBoxLayout()
         backButtonContainer.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
         backButtonContainer.setContentsMargins(10, 10, 0, 0)
 
-        # Circular Back Button with Left Arrow Icon
         backButton = QPushButton(parent=self)
         backButton.setFixedSize(75, 75)
         backButton.setStyleSheet("""
@@ -728,88 +731,130 @@ class DocumentPage(QWidget):
         backButton.setGraphicsEffect(shadow)
         backButton.clicked.connect(self.navigateHome)
 
-        # Add the button to the top-left layout
         backButtonContainer.addWidget(backButton)
-
-        # Add the back button container to the navbar layout
         navBarLayout.addLayout(backButtonContainer)
 
-        # ADD A SPACER TO THE LEFT of the logo
-        navBarLayout.addStretch(1)  # Expands to create even spacing
+        # Add left spacer
+        navBarLayout.addStretch(1)
 
-        # Add the logo and ensure it's properly centered
+        # Add the logo (Centered)
         logoImageLabel = QLabel(self)
         logo = QPixmap("./images/pamLogo (1).png")  
         logoImageLabel.setPixmap(logo)
         logoImageLabel.setScaledContents(True)
         logoImageLabel.setFixedHeight(125)
         logoImageLabel.setFixedWidth(150)
-
-        # Add the logo and make sure it's centered
         navBarLayout.addWidget(logoImageLabel, alignment=QtCore.Qt.AlignCenter)
 
-        # Add a space to the right of the logo (same size as left spacer)
-        navBarLayout.addStretch(1)  
+        # Add right spacer
+        navBarLayout.addStretch(1)
 
-        # ADD AN INVISIBLE EMPTY WIDGET TO MATCH THE BACK BUTTON
+        # Invisible Empty Widget to match Back Button size
         emptyWidget = QWidget()
-        emptyWidget.setFixedSize(60, 50)  # Matches the size of the back button plus the 10 px margin
+        emptyWidget.setFixedSize(85, 85)
         navBarLayout.addWidget(emptyWidget)
+        # ----------------------------- Navbar END ----------------------------- #
+
+        # ----------------------------- File Specifications Bar ----------------------------- #
+        fileSpecWidget = QWidget()
+        fileSpecWidget.setStyleSheet("""
+            background-color: #ffffff;
+            border-radius: 10px;
+            font-family: Arial;
+            color: #000000;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            background-color: #D1D6D7;
+        """)
+        fileSpecWidget.setFixedHeight(100)
         
-        # Setting up the left and right layout that will be containing the document infor
-        documentLayout = QHBoxLayout()
+        fileSpecLayout = QHBoxLayout(fileSpecWidget)
+        
+        # File name
+        fileNameLabel = QLabel(f"File: {fileName}")
+        fileNameLabel.setFont(QFont("Times New Roman", 12))
+        fileSpecLayout.addWidget(fileNameLabel)
+        
+        # Add spacer between file name and file size
+        fileSpecLayout.addStretch(1)
+        
+        # File size
+        try:
+            fileSize = fileSystem.getSize(fileName)
+            fileSizeLabel = QLabel(f"Size: {fileSize}")
+            fileSizeLabel.setFont(QFont("Times New Roman", 12))
+            fileSpecLayout.addWidget(fileSizeLabel)
+        except Exception as e:
+            print(f"Error getting file size: {str(e)}")
+        
+        # ----------------------------- Document Content ----------------------------- #
+        
+        # Creating a content widget
+        contentWidget = QWidget()
+        contentWidget.setStyleSheet("""
+            background-color: #ffffff;
+            border-radius: 10px;
+            font-family: Arial;
+            color: #000000;
+            padding: 20px;
+        """)
+        
+        documentLayout = QVBoxLayout(contentWidget)
+        documentLayout.setSpacing(15)
+        
+        try:
+            print(f"Loading document: {fileName}")
 
-        # setting up the Left layout which will contain the File Specifications and Actionable Items --------------------------
-        leftWidget = QWidget()
-        leftWidget.setStyleSheet(" border-radius: 10px; font-family: Arial; text-align: center;")
-        leftLayout = QVBoxLayout(leftWidget)
+            # Get sections from the document
+            sections = fileSystem.getHeadingsAndContent(fileName)
+            
+            print(f"Found {len(sections)} sections")
+            
+            # If sections were found, display them
+            if sections and len(sections) > 0:
+                for heading, content in sections:
+                    # Create heading label with the section title
+                    headingLabel = QLabel(heading)
+                    headingLabel.setFont(headingFont)
+                    headingLabel.setStyleSheet("color: #000000; font-weight: bold;")
+                    headingLabel.setWordWrap(True)
+                    documentLayout.addWidget(headingLabel)
+                    
+                    # Create content label with proper formatting
+                    contentLabel = QLabel()
+                    contentLabel.setFont(paragraphFont)
+                    contentLabel.setStyleSheet("color: #000000;")
+                    contentLabel.setWordWrap(True)
+                    
+                    # Format bullet points properly if present
+                    if "-" in content:
+                        formatted_content = ""
+                        for line in content.split("\n"):
+                            if line.strip().startswith("-"):
+                                formatted_content += f"• {line.strip()[1:].strip()}<br>"
+                            else:
+                                formatted_content += f"{line}<br>"
+                        contentLabel.setText(formatted_content)
+                    else:
+                        contentLabel.setText(content)
+                    
+                    documentLayout.addWidget(contentLabel)
+                    documentLayout.addSpacing(20)  # Add space between sections
+            else:
+                # If no sections were found
+                noContentLabel = QLabel("No content available in this document")
+                noContentLabel.setFont(paragraphFont)
+                noContentLabel.setAlignment(Qt.AlignCenter)
+                documentLayout.addWidget(noContentLabel)
+                
+        except Exception as e:
+            print(f"Error loading document: {str(e)}")
+            errorLabel = QLabel(f"Error: {str(e)}")
+            errorLabel.setFont(paragraphFont)
+            errorLabel.setAlignment(Qt.AlignCenter)
+            documentLayout.addWidget(errorLabel)
 
-        # setting up the file info
-        fileInfoWidget = QWidget()
-        fileInfoWidget.setStyleSheet("background-color: #D1D6D7; text-align: center; color: #000000")
-        fileInfoLayout = QVBoxLayout(fileInfoWidget)
-
-        # adding the title
-        fileDescriptionTitle = QLabel("File Specifications")
-        fileDescriptionTitle.setFont(titleFont)
-        fileInfoLayout.addWidget(fileDescriptionTitle)
-
-        # adding the Labels for the file descriptors
-        fileNameLabel = QLabel("File name: " + fileName)
-        fileSizeLabel = QLabel("File size: " + fileSystem.getSize(fileName))
-        fileInfoLayout.addWidget(fileNameLabel)
-        fileInfoLayout.addWidget(fileSizeLabel)
-
-        # actionable items setup
-        actionableItemsWidget = QWidget()
-        actionableItemsWidget.setStyleSheet("background-color: #ffffff; text-align: center; color: #000000;")
-        actionableItemsLayout = QVBoxLayout(actionableItemsWidget)
-
-        # adding the title
-        actionableItemsTitle = QLabel("Actionable Items")
-        actionableItemsTitle.setFont(titleFont)
-        actionableItemsLayout.addWidget(actionableItemsTitle)
-
-        # opening the ActioanableItems txt file
-        actionableItems = []
-        actionableItemFile = fileName.replace("minutes.docx", "actions.txt")
-        actionableItems = fileSystem.getActionableItemsList(actionableItemFile)
-
-        # adding labels onto the actionable items list
-        for item in actionableItems:
-            itemLabel = QLabel(item)
-            itemLabel.setWordWrap(True)
-            actionableItemsLayout.addWidget(itemLabel)
-
-        # adding the sections into the left layout
-        leftLayout.addWidget(fileInfoWidget, 1)
-        leftLayout.addWidget(actionableItemsWidget, 3)
-
-        # -------------------------------------------------------------------------------------
-
-        # ------------------------------ Right Layout START ----------------------------------#
-
-        # creating an area for scrolling
+        # Create a scroll area and set the content widget to it
         scrollArea = QScrollArea()
         scrollArea.setWidgetResizable(True)
         scrollArea.setFrameShape(QFrame.NoFrame)
@@ -841,56 +886,21 @@ class DocumentPage(QWidget):
                 border: none;
             }
         """)
-
-        rightWidget = QWidget();
-        rightWidget.setStyleSheet("""
-            background-color: #ffffff;
-            border-radius: 10px;
-            font-family: Arial;
-            text-align: center;
-            color: #000000;
-            padding-right: 10px; /* Prevents scrollbar from covering corners */
-        """)
         
-        rightLayout = QVBoxLayout(rightWidget)
+        # Set the content widget to the scroll area
+        scrollArea.setWidget(contentWidget)
 
-        sectionHeadings = fileSystem.sectionHeadings
-        sections = fileSystem.getHeadingsAndContent(fileName)
-
-        for i in range (0, len(sectionHeadings)):
-            headingLabel = QLabel(sections[i][0])
-            headingLabel.setWordWrap(True)
-            headingLabel.setFont(headingFont)
-
-            contentLabel = QLabel(sections[i][1])
-            contentLabel.setWordWrap(True)
-            contentLabel.setFont(paragraphFont)
-
-            # adding the heading and content 
-            rightLayout.addWidget(headingLabel)
-            rightLayout.addWidget(contentLabel)
-
-        # adding the scroll area to the right widget
-        scrollArea.setWidget(rightWidget)
-        # ------------------------------ Right Layout END ----------------------------------#
-
-        # adding the left and right layout to the document layout
-        documentLayout.addWidget(leftWidget)
-        documentLayout.addWidget(scrollArea)
-        documentLayout.setStretch(0, 2)  # Left layout
-        documentLayout.setStretch(1, 3)  # Right layout
-
-        # adding the widgets/ layouts to the mainLayout
-        mainLayout.addWidget(navBarWidget) 
-        mainLayout.addLayout(documentLayout)
+        # Adding the widgets to the mainLayout
+        mainLayout.addWidget(navBarWidget)
+        mainLayout.addWidget(fileSpecWidget)
+        mainLayout.addWidget(scrollArea)
         
-        # setting the layout to the window
+        # Setting the main layout to the window
         self.setLayout(mainLayout)
 
     # this function navigates back to the main page
     def navigateHome(self):
-        self.stack.setCurrentIndex(1)        
-
+        self.stack.setCurrentIndex(1)
 
 # this class manages the stacked pages
 class MainWindow(QMainWindow):

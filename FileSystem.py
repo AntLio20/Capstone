@@ -1,4 +1,4 @@
-# File Name: Minutes.py
+# File Name: FileSystem.py
 # Authors: Javier Chung, Andy Dai, Antonio Lio, Jason Stuckless
 # Description: Functionality for reading files in a directory
 
@@ -16,7 +16,6 @@ class FileSystem:
         self.fileDirectory = fileDirectory
         self.sectionHeadings = ["Opening", "Present", "Absent", "Agenda Approval", "Previous Meeting Approval",
                    "Previous Meeting Summary", "Summary of Meeting", "Adjournment"]
-
 
     # this method searches for the amount of files wihtin the directory while populating a list with thier names
     def searchDirectory(self):
@@ -50,23 +49,90 @@ class FileSystem:
 
         destinationFilePath = os.path.join(self.fileDirectory, fileName)
 
-
-        # opening the file
-        with open(destinationFilePath, 'r') as f:
-            for line in f:
-                actionableItemsList.append(line.strip())
-
+        try:
+            # Try to process as a docx file first
+            if fileName.endswith('.docx'):
+                content = docx2txt.process(destinationFilePath)
+                
+                # Look for the "Action Items" section in the docx
+                action_items_match = re.search(r"# Action Items\s+([\s\S]+?)(?=\s+#|$)", content)
+                
+                if action_items_match:
+                    action_items_text = action_items_match.group(1)
+                    # Extract bullet points
+                    for line in action_items_text.split('\n'):
+                        if line.strip().startswith('-'):
+                            actionableItemsList.append(line.strip()[1:].strip())  # Remove the dash and trim
+            else:
+                # For text files
+                with open(destinationFilePath, 'r') as f:
+                    for line in f:
+                        actionableItemsList.append(line.strip())
+                        
+        except Exception as e:
+            print(f"Error reading actionable items from {fileName}: {str(e)}")
+            # Return a default empty list on error
+            
         return actionableItemsList
 
     def getHeadingsAndContent(self, fileName):
-        sectionContent = []
-        destinationFilePath = os.path.join(self.fileDirectory, fileName)
-        minutesDoc = docx2txt.process(destinationFilePath) # reading the document
-
-
-        # matches a number (d) and . with any text behind it untill a new line
-        # the (.*?) gets the content up untill the next number and .
-        headings = r"(\d+\.\s+[^\n]+)(.*?)(?=\n\d+\.\s|$)" 
-
-        # finds all headings and partitions them with the content associated with it and puts it in a dynamic list
-        return re.findall(headings, minutesDoc, re.DOTALL)
+        try:
+            destinationFilePath = os.path.join(self.fileDirectory, fileName)
+            minutesDoc = docx2txt.process(destinationFilePath)  # reading the document
+            
+            # First check if the document has a transcript format with # headings
+            transcript_format = re.findall(r"# ([^\n]+)\s+([\s\S]+?)(?=\s+#|$)", minutesDoc)
+            
+            if transcript_format and len(transcript_format) > 0:
+                print(f"Detected transcript format with {len(transcript_format)} sections")
+                
+                # Create a mapping from transcript headings to expected section headings
+                heading_map = {
+                    "Date and Time": "Opening",
+                    "Attendees": "Present",
+                    "Key Discussion Topics": "Summary of Meeting",
+                    "Decisions Made": "Previous Meeting Summary",
+                    "Action Items": "Agenda Approval",
+                    "Next Steps": "Adjournment"
+                }
+                
+                # Convert transcript format to our required format
+                formatted_sections = []
+                
+                for heading, content in transcript_format:
+                    # Format the section heading to match what the app expects
+                    formatted_heading = f"{heading}"
+                    if heading in heading_map:
+                        formatted_heading = f"{heading} ({heading_map[heading]})"
+                        
+                    # Format content - if it's a list with bullet points, keep the formatting
+                    formatted_content = content.strip()
+                    
+                    formatted_sections.append((formatted_heading, formatted_content))
+                
+                return formatted_sections
+            
+            # If not in transcript format, try the original regex pattern for numbered sections
+            headings = r"(\d+\.\s+[^\n]+)(.*?)(?=\n\d+\.\s|$)" 
+            sections = re.findall(headings, minutesDoc, re.DOTALL)
+            
+            if sections and len(sections) > 0:
+                print(f"Detected standard format with {len(sections)} sections")
+                return sections
+            
+            # If we still don't have any sections, try a more general approach
+            # Just look for any kind of section headers
+            general_sections = re.findall(r"([A-Z][A-Za-z\s]+:)([^:]+)(?=\s*[A-Z][A-Za-z\s]+:|$)", minutesDoc)
+            
+            if general_sections and len(general_sections) > 0:
+                print(f"Detected general format with {len(general_sections)} sections")
+                return general_sections
+            
+            # If all parsing attempts fail, return the entire document as a single section
+            print("No structured sections found, returning full document")
+            return [("Document Content", minutesDoc)]
+            
+        except Exception as e:
+            print(f"Error parsing document {fileName}: {str(e)}")
+            # Return document as a single section with error message
+            return [("Error Reading Document", f"There was an error parsing this document: {str(e)}")]

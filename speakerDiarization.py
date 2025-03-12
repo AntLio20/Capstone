@@ -35,13 +35,13 @@ import logging
 # Defining global static variables
 AUDIO_FILE = "tmpRecording.wav"
 DIARIZATION_MODEL_CACHE_DIR = "./DiarizationModel"
+TRANSCRIPT_DIR = "./diarizedTranscripts"
 
 def transcribeAndDiarize():
 
     # Setting the file path to the desktop of the host OS
-    desktop = os.path.join(os.path.expanduser("~"), "Desktop")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filepath = os.path.join(desktop, f"{timestamp}-transcript.docx")
+    filepath = os.path.join(TRANSCRIPT_DIR, f"{timestamp}-transcript.docx")
 
     totalStartTime = time.time()
 

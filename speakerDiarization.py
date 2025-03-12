@@ -31,13 +31,14 @@ import wave
 import Transcriber
 from datetime import datetime
 import logging
+from pydub import AudioSegment
 
 # Defining global static variables
 AUDIO_FILE = "tmpRecording.wav"
 DIARIZATION_MODEL_CACHE_DIR = "./DiarizationModel"
 TRANSCRIPT_DIR = "./diarizedTranscripts"
 
-def transcribeAndDiarize():
+def transcribeAndDiarize(modelType):
 
     # Setting the file path to the desktop of the host OS
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -56,10 +57,9 @@ def transcribeAndDiarize():
 
     # Creating a new document to store the transcript
     doc = Document()
-
-    # opening audiofile
-    audio = wave.open(AUDIO_FILE, "rb")
-    frameRate = audio.getframerate()
+    
+    # Opening the audio file to enable segmenting
+    audio = AudioSegment.from_file(AUDIO_FILE)
 
     # converting the audio clip into a trascription
     for turn, _, speaker in diarization.itertracks(yield_label=True):
@@ -68,7 +68,7 @@ def transcribeAndDiarize():
         startTime = turn.start
         endTime = turn.end
 
-        text = Transcriber.transcribeAudio(audio, frameRate, startTime, endTime)
+        text = Transcriber.transcribeAudio(audio, startTime, endTime, modelType)
 
         doc.add_paragraph(f"{startTime} --> {endTime}")
         doc.add_paragraph(f"{speaker}")

@@ -870,6 +870,7 @@ class SummarizationPage(QWidget):
         # ------------------------------------------------------ #
 
         self.resetFileInput()
+        self.drawDropDown()
 
         # adding the components to the mainLayout
         mainLayout.addWidget(navBarWidget) 

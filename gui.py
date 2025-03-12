@@ -1,5 +1,5 @@
 
-# File Name: pam.py
+# File Name: gui.py
 # Authors: Javier Chung, Andy Dai, Antonio Lio, Jason Stuckless
 # Date: Oct 26, 2024
 # Description: This is the main page containing the GUI

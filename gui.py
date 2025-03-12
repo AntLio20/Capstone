@@ -4,20 +4,26 @@
 # Description: This is the main page containing the GUI
 
 # pip install PyQt5
+# pip install python-docx       # For working with docx files
+# pip install Pillow            # For image handling
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QSpacerItem, QHBoxLayout, QSizePolicy, QGraphicsDropShadowEffect, QGridLayout, QFrame, QScrollArea, QComboBox
 from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap, QCursor, QIcon, QFontMetrics
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QThread
 from PyQt5.QtWidgets import QMessageBox
-
 import sys
 from FileSystem import FileSystem
 import pam
-import os
 import openai
 import speakerDiarization
 import Recorder
 from login import LoginSystem
+from docx import Document
+import os
+import io
+from PIL import Image, ImageQt
+from PyQt5.QtCore import QSize
+
 
 # connecting to openai
 openai.api_key = os.getenv(
@@ -980,28 +986,12 @@ class SummarizationPage(QWidget):
 
 # this contains the GUI for opening up a document
 class DocumentPage(QWidget):
-
-    def __init__(self, stack, fileName = None):
+    def __init__(self, stack, fileName=None):
         super().__init__()
 
         self.stack = stack
         self.fileName = fileName
-
-        fileSystem = FileSystem() # initializing the file system
-
-        # font for titles
-        titleFont = QFont()
-        titleFont.setFamily("Times New Roman")   
-        titleFont.setPointSize(20)     
-        titleFont.setBold(True)   
-
-        headingFont = QFont()
-        headingFont.setFamily("Times New Roman")   
-        headingFont.setPointSize(16)     
-
-        paragraphFont = QFont()
-        paragraphFont.setFamily("Times New Roman")   
-        paragraphFont.setPointSize(11)     
+        self.fileSystem = FileSystem()  # initializing the file system
 
         # setting the background color
         palette = self.palette()
@@ -1014,7 +1004,8 @@ class DocumentPage(QWidget):
 
         # ----------------------------- Navbar START ----------------------------- #
         navBarWidget = QWidget()
-        navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
+        navBarWidget.setStyleSheet(
+            "background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
         navBarWidget.setFixedHeight(100)
 
         # Set up the layout for the navbar
@@ -1052,7 +1043,7 @@ class DocumentPage(QWidget):
 
         # Add the logo (Centered)
         logoImageLabel = QLabel(self)
-        logo = QPixmap("./images/pamLogo (1).png")  
+        logo = QPixmap("./images/pamLogo (1).png")
         logoImageLabel.setPixmap(logo)
         logoImageLabel.setScaledContents(True)
         logoImageLabel.setFixedHeight(125)
@@ -1080,94 +1071,29 @@ class DocumentPage(QWidget):
             background-color: #D1D6D7;
         """)
         fileSpecWidget.setFixedHeight(100)
-        
+
         fileSpecLayout = QHBoxLayout(fileSpecWidget)
-        
+
         # File name
         fileNameLabel = QLabel(f"File: {fileName}")
         fileNameLabel.setFont(QFont("Times New Roman", 12))
         fileSpecLayout.addWidget(fileNameLabel)
-        
+
         # Add spacer between file name and file size
         fileSpecLayout.addStretch(1)
-        
+
         # File size
         try:
-            fileSize = fileSystem.getSize(fileName)
+            fileSize = self.fileSystem.getSize(fileName)
             fileSizeLabel = QLabel(f"Size: {fileSize}")
             fileSizeLabel.setFont(QFont("Times New Roman", 12))
             fileSpecLayout.addWidget(fileSizeLabel)
         except Exception as e:
             print(f"Error getting file size: {str(e)}")
-        
+
         # ----------------------------- Document Content ----------------------------- #
-        
-        # Creating a content widget
-        contentWidget = QWidget()
-        contentWidget.setStyleSheet("""
-            background-color: #ffffff;
-            border-radius: 10px;
-            font-family: Arial;
-            color: #000000;
-            padding: 20px;
-        """)
-        
-        documentLayout = QVBoxLayout(contentWidget)
-        documentLayout.setSpacing(15)
-        
-        try:
-            print(f"Loading document: {fileName}")
 
-            # Get sections from the document
-            sections = fileSystem.getHeadingsAndContent(fileName)
-            
-            print(f"Found {len(sections)} sections")
-            
-            # If sections were found, display them
-            if sections and len(sections) > 0:
-                for heading, content in sections:
-                    # Create heading label with the section title
-                    headingLabel = QLabel(heading)
-                    headingLabel.setFont(headingFont)
-                    headingLabel.setStyleSheet("color: #000000; font-weight: bold;")
-                    headingLabel.setWordWrap(True)
-                    documentLayout.addWidget(headingLabel)
-                    
-                    # Create content label with proper formatting
-                    contentLabel = QLabel()
-                    contentLabel.setFont(paragraphFont)
-                    contentLabel.setStyleSheet("color: #000000;")
-                    contentLabel.setWordWrap(True)
-                    
-                    # Format bullet points properly if present
-                    if "-" in content:
-                        formatted_content = ""
-                        for line in content.split("\n"):
-                            if line.strip().startswith("-"):
-                                formatted_content += f"• {line.strip()[1:].strip()}<br>"
-                            else:
-                                formatted_content += f"{line}<br>"
-                        contentLabel.setText(formatted_content)
-                    else:
-                        contentLabel.setText(content)
-                    
-                    documentLayout.addWidget(contentLabel)
-                    documentLayout.addSpacing(20)  # Add space between sections
-            else:
-                # If no sections were found
-                noContentLabel = QLabel("No content available in this document")
-                noContentLabel.setFont(paragraphFont)
-                noContentLabel.setAlignment(Qt.AlignCenter)
-                documentLayout.addWidget(noContentLabel)
-                
-        except Exception as e:
-            print(f"Error loading document: {str(e)}")
-            errorLabel = QLabel(f"Error: {str(e)}")
-            errorLabel.setFont(paragraphFont)
-            errorLabel.setAlignment(Qt.AlignCenter)
-            documentLayout.addWidget(errorLabel)
-
-        # Create a scroll area and set the content widget to it
+        # Creating a scroll area for document content
         scrollArea = QScrollArea()
         scrollArea.setWidgetResizable(True)
         scrollArea.setFrameShape(QFrame.NoFrame)
@@ -1177,12 +1103,10 @@ class DocumentPage(QWidget):
                 border-radius: 10px;
                 background-color: #ffffff;
             }
-
             QScrollArea > QWidget {
                 border-radius: 10px;
                 background-color: #ffffff;
             }
-
             /* Scrollbar Styling */
             QScrollBar:vertical {
                 border: none;
@@ -1199,7 +1123,164 @@ class DocumentPage(QWidget):
                 border: none;
             }
         """)
-        
+
+        # Create content widget for scroll area
+        contentWidget = QWidget()
+        contentWidget.setStyleSheet("""
+            background-color: #ffffff;
+            border-radius: 10px;
+            font-family: Arial;
+            color: #000000;
+            padding: 20px;
+        """)
+
+        # Main document layout
+        documentLayout = QVBoxLayout(contentWidget)
+        documentLayout.setSpacing(15)
+
+        try:
+            # Get the full path to the document
+            fullPath = os.path.join(self.fileSystem.fileDirectory, fileName)
+
+            # Check if file exists
+            if not os.path.exists(fullPath):
+                errorLabel = QLabel(f"Error: File not found at {fullPath}")
+                errorLabel.setAlignment(Qt.AlignCenter)
+                documentLayout.addWidget(errorLabel)
+            else:
+                # Load the document using python-docx
+                doc = Document(fullPath)
+
+                # Add a horizontal line at the top of the document content
+                line = QFrame()
+                line.setFrameShape(QFrame.HLine)
+                line.setFrameShadow(QFrame.Sunken)
+                line.setStyleSheet("border: 1px solid #cccccc;")
+                documentLayout.addWidget(line)
+
+                # Add some spacing after the line
+                documentLayout.addSpacing(10)
+
+                # Process paragraphs
+                for para in doc.paragraphs:
+                    if not para.text.strip():  # Skip empty paragraphs
+                        continue
+
+                    # Create paragraph label
+                    paraLabel = QLabel()
+
+                    # Apply paragraph style
+                    if para.style.name.startswith('Heading'):
+                        # Get heading level (1-9)
+                        try:
+                            level = int(para.style.name[-1])
+                            if 1 <= level <= 6:
+                                fontSize = 22 - (level * 2)  # Size decreases with level
+                                fontWeight = QFont.Bold
+                            else:
+                                fontSize = 12
+                                fontWeight = QFont.Normal
+                        except:
+                            fontSize = 16
+                            fontWeight = QFont.Bold
+
+                        headingFont = QFont("Times New Roman", fontSize, fontWeight)
+                        paraLabel.setFont(headingFont)
+
+                        # Add some spacing before headings
+                        documentLayout.addSpacing(10)
+                    else:
+                        # Regular paragraph
+                        paraFont = QFont("Times New Roman", 12)
+                        paraLabel.setFont(paraFont)
+
+                    # Set paragraph text with basic formatting
+                    formatted_text = ""
+                    for run in para.runs:
+                        text = run.text
+
+                        # Apply formatting
+                        if run.bold:
+                            text = f"<strong>{text}</strong>"
+                        if run.italic:
+                            text = f"<em>{text}</em>"
+                        if run.underline:
+                            text = f"<u>{text}</u>"
+
+                        formatted_text += text
+
+                    paraLabel.setText(formatted_text)
+                    paraLabel.setTextFormat(Qt.RichText)
+                    paraLabel.setWordWrap(True)
+                    documentLayout.addWidget(paraLabel)
+
+                # Process tables
+                for table in doc.tables:
+                    # Create a frame for the table
+                    tableFrame = QFrame()
+                    tableFrame.setFrameShape(QFrame.Box)
+                    tableFrame.setStyleSheet("border: 1px solid #CCCCCC; background-color: #F9F9F9;")
+
+                    # Create grid layout for table
+                    tableLayout = QGridLayout(tableFrame)
+                    tableLayout.setSpacing(2)
+
+                    # Add table cells
+                    for i, row in enumerate(table.rows):
+                        for j, cell in enumerate(row.cells):
+                            # Create cell content
+                            cellLabel = QLabel()
+
+                            # Format cell content
+                            cell_text = ""
+                            for para in cell.paragraphs:
+                                if cell_text:
+                                    cell_text += "<br>"
+
+                                for run in para.runs:
+                                    text = run.text
+                                    if run.bold:
+                                        text = f"<strong>{text}</strong>"
+                                    if run.italic:
+                                        text = f"<em>{text}</em>"
+                                    if run.underline:
+                                        text = f"<u>{text}</u>"
+
+                                    cell_text += text
+
+                            cellLabel.setText(cell_text)
+                            cellLabel.setTextFormat(Qt.RichText)
+                            cellLabel.setWordWrap(True)
+                            cellLabel.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+
+                            # Style header row differently
+                            if i == 0:
+                                cellLabel.setStyleSheet("font-weight: bold; background-color: #E6E6E6; padding: 5px;")
+                            else:
+                                cellLabel.setStyleSheet("padding: 5px;")
+
+                            tableLayout.addWidget(cellLabel, i, j)
+
+                    # Add the table to the document layout
+                    documentLayout.addWidget(tableFrame)
+
+                # Add images from the document
+                self.add_document_images(doc, documentLayout)
+
+                # Add spacing at the end
+                documentLayout.addSpacing(20)
+
+        except Exception as e:
+            print(f"Error displaying document: {str(e)}")
+            errorLabel = QLabel(f"Error displaying document: {str(e)}")
+            errorLabel.setFont(QFont("Times New Roman", 12))
+            errorLabel.setAlignment(Qt.AlignCenter)
+            errorLabel.setWordWrap(True)
+            documentLayout.addWidget(errorLabel)
+
+        # Add stretch to push everything to the top
+        documentLayout.addStretch()
+
         # Set the content widget to the scroll area
         scrollArea.setWidget(contentWidget)
 
@@ -1207,13 +1288,60 @@ class DocumentPage(QWidget):
         mainLayout.addWidget(navBarWidget)
         mainLayout.addWidget(fileSpecWidget)
         mainLayout.addWidget(scrollArea)
-        
+
         # Setting the main layout to the window
         self.setLayout(mainLayout)
+
+    def add_document_images(self, doc, layout):
+        """Extract and display images from the document"""
+        try:
+            image_index = 0
+
+            # Process all relationships to find images
+            for rel in doc.part.rels.values():
+                if "image" in rel.target_ref:
+                    try:
+                        # Get the image data
+                        image_data = rel.target_part.blob
+
+                        # Create an image from the binary data
+                        image = Image.open(io.BytesIO(image_data))
+
+                        # Convert PIL Image to QPixmap
+                        img_qt = ImageQt.ImageQt(image)
+                        pixmap = QPixmap.fromImage(img_qt)
+
+                        # Create an image label
+                        imgLabel = QLabel()
+                        imgLabel.setPixmap(pixmap)
+
+                        # Scale the image to fit within the document width while maintaining aspect ratio
+                        max_width = 600  # Maximum width in pixels
+                        if pixmap.width() > max_width:
+                            imgLabel.setPixmap(pixmap.scaledToWidth(max_width, Qt.SmoothTransformation))
+
+                        # Center the image
+                        imgLabel.setAlignment(Qt.AlignCenter)
+
+                        # Add to layout
+                        layout.addWidget(imgLabel)
+
+                        # Add caption
+                        captionLabel = QLabel(f"Figure {image_index + 1}")
+                        captionLabel.setAlignment(Qt.AlignCenter)
+                        captionLabel.setFont(QFont("Times New Roman", 10, QFont.Bold))
+                        layout.addWidget(captionLabel)
+
+                        image_index += 1
+                    except Exception as e:
+                        print(f"Error processing image {image_index}: {str(e)}")
+        except Exception as e:
+            print(f"Error adding images: {str(e)}")
 
     # this function navigates back to the main page
     def navigateHome(self):
         self.stack.setCurrentIndex(1)
+
 
 # this class manages the stacked pages
 class MainWindow(QMainWindow):

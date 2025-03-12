@@ -7,9 +7,9 @@
 # pip install python-docx       # For working with docx files
 # pip install Pillow            # For image handling
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QSpacerItem, QHBoxLayout, QSizePolicy, QGraphicsDropShadowEffect, QGridLayout, QFrame, QScrollArea, QComboBox
-from PyQt5.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QPalette, QColor, QFont, QPixmap, QCursor, QIcon, QFontMetrics
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QThread
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QSizePolicy, QGraphicsDropShadowEffect, QGridLayout, QFrame, QScrollArea, QComboBox
+from PyQt5.QtGui import QPalette, QColor, QFont, QPixmap, QCursor, QFontMetrics
+from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import QMessageBox
 import sys
 from FileSystem import FileSystem
@@ -22,8 +22,6 @@ from docx import Document
 import os
 import io
 from PIL import Image, ImageQt
-from PyQt5.QtCore import QSize
-
 
 # connecting to openai
 openai.api_key = os.getenv(
@@ -626,10 +624,10 @@ class RecordAudioPage(QWidget):
         # setting up the layout
         mainLayout = QVBoxLayout()
 
-        # -------------------- NAVBAR ----------------------- #
-        # this is the nav bar that contains the logo and a back button
+        # ----------------------------- Navbar START ----------------------------- #
         navBarWidget = QWidget()
-        navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
+        navBarWidget.setStyleSheet(
+            "background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
         navBarWidget.setFixedHeight(100)
 
         # Set up the layout for the navbar
@@ -637,12 +635,12 @@ class RecordAudioPage(QWidget):
         navBarLayout.setContentsMargins(0, 0, 0, 0)
         navBarLayout.setSpacing(0)
 
-        # Create a container layout to keep the button in the top-left
+        # Back Button (Top Left)
         backButtonContainer = QVBoxLayout()
         backButtonContainer.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
         backButtonContainer.setContentsMargins(10, 10, 0, 0)
 
-        # Circular Back Button with Left Arrow Icon
+        # Back Button with Left Arrow Icon
         backButton = QPushButton(parent=self)
         backButton.setFixedSize(75, 75)
         backButton.setStyleSheet("""
@@ -660,35 +658,29 @@ class RecordAudioPage(QWidget):
         backButton.setGraphicsEffect(shadow)
         backButton.clicked.connect(self.navigateHome)
 
-        # Add the button to the top-left layout
         backButtonContainer.addWidget(backButton)
-
-        # Add the back button container to the navbar layout
         navBarLayout.addLayout(backButtonContainer)
 
-        # ADD A SPACER TO THE LEFT of the logo
-        navBarLayout.addStretch(1)  # Expands to create even spacing
+        # Add left spacer
+        navBarLayout.addStretch(1)
 
-        # Add the logo and ensure it's properly centered
+        # Add the logo (Centered)
         logoImageLabel = QLabel(self)
-        logo = QPixmap("./images/pamLogo (1).png")  
+        logo = QPixmap("./images/pamLogo (1).png")
         logoImageLabel.setPixmap(logo)
         logoImageLabel.setScaledContents(True)
         logoImageLabel.setFixedHeight(125)
         logoImageLabel.setFixedWidth(150)
-
-        # Add the logo and make sure it's centered
         navBarLayout.addWidget(logoImageLabel, alignment=QtCore.Qt.AlignCenter)
 
-        # Add a space to the right of the logo (same size as left spacer)
-        navBarLayout.addStretch(1)  
+        # Add right spacer
+        navBarLayout.addStretch(1)
 
         # Invisible Empty Widget to match Back Button size
         emptyWidget = QWidget()
         emptyWidget.setFixedSize(85, 85)
         navBarLayout.addWidget(emptyWidget)
-
-        # ------------------------------------------------------ #
+        # ----------------------------- Navbar END ----------------------------- #
 
         # -------------------- Recording Layout where the user can select record ---------------------- #
 
@@ -794,7 +786,7 @@ class RecordAudioPage(QWidget):
 
         self.stack.setCurrentIndex(1)
 
-# -------------------------------------- SUMMARIATION PAGE ----------------------------------------- #
+# -------------------------------------- SUMMARIZATION PAGE ----------------------------------------- #
 # this contains the GUI for summarizing a note
 class SummarizationPage(QWidget):
     def __init__(self, stack):
@@ -807,14 +799,20 @@ class SummarizationPage(QWidget):
         palette.setColor(QPalette.Window, QColor('#DFDFDF'))
         self.setPalette(palette)
         self.setAutoFillBackground(True)
+        
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(40)
+        shadow.setXOffset(10)
+        shadow.setYOffset(10)
+        shadow.setColor(QColor(0, 0, 0, 100))
 
         # setting up the layout
         mainLayout = QVBoxLayout()
 
-        # -------------------- NAVBAR ----------------------- #
-        # this is the nav bar that contains the logo and a back button
+        # ----------------------------- Navbar START ----------------------------- #
         navBarWidget = QWidget()
-        navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
+        navBarWidget.setStyleSheet(
+            "background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
         navBarWidget.setFixedHeight(100)
 
         # Set up the layout for the navbar
@@ -822,12 +820,12 @@ class SummarizationPage(QWidget):
         navBarLayout.setContentsMargins(0, 0, 0, 0)
         navBarLayout.setSpacing(0)
 
-        # Create a container layout to keep the button in the top-left
+        # Back Button (Top Left)
         backButtonContainer = QVBoxLayout()
         backButtonContainer.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
         backButtonContainer.setContentsMargins(10, 10, 0, 0)
 
-        # Circular Back Button with Left Arrow Icon
+        # Back Button with Left Arrow Icon
         backButton = QPushButton(parent=self)
         backButton.setFixedSize(75, 75)
         backButton.setStyleSheet("""
@@ -845,33 +843,29 @@ class SummarizationPage(QWidget):
         backButton.setGraphicsEffect(shadow)
         backButton.clicked.connect(self.navigateHome)
 
-        # Add the button to the top-left layout
         backButtonContainer.addWidget(backButton)
-
-        # Add the back button container to the navbar layout
         navBarLayout.addLayout(backButtonContainer)
 
-        # Add a spacer to the left of the logo
-        navBarLayout.addStretch(1)  # Expands to create even spacing
+        # Add left spacer
+        navBarLayout.addStretch(1)
 
-        # Add the logo and ensure it's properly centered
+        # Add the logo (Centered)
         logoImageLabel = QLabel(self)
-        logo = QPixmap("./images/pamLogo (1).png")  
+        logo = QPixmap("./images/pamLogo (1).png")
         logoImageLabel.setPixmap(logo)
         logoImageLabel.setScaledContents(True)
         logoImageLabel.setFixedHeight(125)
         logoImageLabel.setFixedWidth(150)
         navBarLayout.addWidget(logoImageLabel, alignment=QtCore.Qt.AlignCenter)
 
-        # Add a space to the right of the logo
-        navBarLayout.addStretch(1)  
+        # Add right spacer
+        navBarLayout.addStretch(1)
 
         # Invisible Empty Widget to match Back Button size
         emptyWidget = QWidget()
         emptyWidget.setFixedSize(85, 85)
         navBarLayout.addWidget(emptyWidget)
-
-        # ------------------------------------------------------ #
+        # ----------------------------- Navbar END ----------------------------- #
 
         self.resetFileInput()
         self.drawDropDown()
@@ -1018,6 +1012,7 @@ class DocumentPage(QWidget):
         backButtonContainer.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
         backButtonContainer.setContentsMargins(10, 10, 0, 0)
 
+        # Back Button with Left Arrow Icon
         backButton = QPushButton(parent=self)
         backButton.setFixedSize(75, 75)
         backButton.setStyleSheet("""

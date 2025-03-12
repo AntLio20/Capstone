@@ -8,7 +8,7 @@ import Transcript
 import docx2txt # remove later
 
 # this function will run the summarization of our program
-def summarize(filepath):
+def summarize(filepath, model):
 
     transcript_type = Transcript.detectTranscriptFormat(filepath)
 

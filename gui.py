@@ -709,7 +709,7 @@ class RecordAudioPage(QWidget):
         self.drawDropDown()
 
         # Add the button to the layout
-        mainLayout.setAlignment(self.dropdown, Qt.AlignCenter)
+        recordLayout.addWidget(self.dropdown, alignment=Qt.AlignCenter)
         recordLayout.addWidget(self.recordButton, alignment=Qt.AlignCenter)
 
         # Adding components to mainLayout
@@ -767,7 +767,7 @@ class RecordAudioPage(QWidget):
     # this function is used to draw a drop down bar
     def drawDropDown(self):
         self.dropdown = QComboBox()
-        self.dropdown.addItems(["Medium en", "Base en", "Tiny en"])  
+        self.dropdown.addItems(["Medium en (Accurate)", "Base en (Moderate)", "Tiny en (Fast)"])  
         self.dropdown.setFixedWidth(self.width() // 4)
         self.dropdown.setStyleSheet("""
             QComboBox {

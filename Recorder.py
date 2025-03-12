@@ -4,7 +4,7 @@
 # Description: This python file is used to record live audio
 
 # libraries needed 
-# brew install portaudio
+# (MAC) brew install portaudio
 # pip install pyaudio
 
 import wave

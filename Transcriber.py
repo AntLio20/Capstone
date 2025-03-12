@@ -4,6 +4,7 @@
 # Description: This python file transcribes audio segments
 
 # pip install openai-whisper
+# pip install pydub
 # pip install audioSegment
 
 import whisper

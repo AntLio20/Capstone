@@ -7,8 +7,8 @@
 # pip install python-docx       # For working with docx files
 # pip install Pillow            # For image handling
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QSizePolicy, QGraphicsDropShadowEffect, QGridLayout, QFrame, QScrollArea, QComboBox
-from PyQt5.QtGui import QPalette, QColor, QFont, QPixmap, QCursor, QFontMetrics
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QSizePolicy, QGraphicsDropShadowEffect, QGridLayout, QFrame, QScrollArea, QComboBox, QSpacerItem
+from PyQt5.QtGui import QPalette, QColor, QFont, QPixmap, QCursor
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import QMessageBox
 import sys
@@ -267,14 +267,14 @@ class MainPage(QWidget):
         # setting up the layout
         mainLayout = QVBoxLayout()
 
-        # Creating the header bar at the top which will inclide the logo and buttons
+        # Creating the header bar at the top which will include the logo and buttons
         navBarWidget = QWidget()
         navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")  
         navBarWidget.setFixedHeight(150)
         navBarLayout = QHBoxLayout(navBarWidget)
         navBarLayout.setContentsMargins(50, 25, 50, 25)
 
-        # Adding the logo and button
+        # Adding the logo
         logoImageLabel = QLabel(self)
 
         # Loading the image 
@@ -289,40 +289,28 @@ class MainPage(QWidget):
         navBarLayout.addWidget(logoImageLabel)
 
         def createImageButton(image_path, text, click_action):
-            """
-            Creates a QPushButton with an icon above text while keeping a solid background.
-            """
-            # Create a QPushButton without text initially
+            """ Creates a QPushButton with an icon above text while keeping a solid background. """
             button = QPushButton()
             button.setFixedSize(150, 100)  # Set button size
-            
-            # Set cursor to pointing hand for better UX
             button.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
 
-            # Create a layout to stack icon and text
             layout = QVBoxLayout(button)
-            layout.setSpacing(5)  # Space between icon and text
-            layout.setAlignment(QtCore.Qt.AlignCenter)  # Center align content
+            layout.setSpacing(5)  
+            layout.setAlignment(QtCore.Qt.AlignCenter)
 
-            # Load the icon as a QLabel
             iconLabel = QLabel()
             iconPixmap = QPixmap(image_path).scaled(40, 40, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
             iconLabel.setPixmap(iconPixmap)
             iconLabel.setAlignment(QtCore.Qt.AlignCenter)
 
-            # Create a QLabel for the text
             textLabel = QLabel(text)
             textLabel.setAlignment(QtCore.Qt.AlignCenter)
             textLabel.setStyleSheet("font-size: 15px; color: #000000;")
 
-            # Add widgets to layout
             layout.addWidget(iconLabel)
             layout.addWidget(textLabel)
-
-            # Apply the layout to the button
             button.setLayout(layout)
 
-            # Apply button styles
             button.setStyleSheet("""
                 QPushButton {
                     background-color: #ffffff;
@@ -334,9 +322,7 @@ class MainPage(QWidget):
                 }
             """)
 
-            # Connect the button action
             button.clicked.connect(click_action)
-
             return button
 
         # Create buttons with images
@@ -347,22 +333,63 @@ class MainPage(QWidget):
         navBarLayout.addWidget(summarizeButton)
         navBarLayout.addWidget(recordButton)
 
-        # Creating a a gridview to display all summarized documents
-        documentsWidget = QWidget()
-        documentsWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial;")  
+        # Create a scrollable area for the document grid
+        scrollArea = QScrollArea()
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setFrameShape(QFrame.NoFrame)
+        scrollArea.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                border-radius: 10px;
+                background-color: #ffffff;
+            }
+            QScrollArea > QWidget {
+                border-radius: 10px;
+                background-color: #ffffff;
+            }
+            /* Scrollbar Styling */
+            QScrollBar:vertical {
+                border: none;
+                background: transparent;
+                width: 15px;
+                margin: 2px 5px 2px 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 5px;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                background: none;
+                border: none;
+            }
+        """)
 
-        self.documentsLayout = QGridLayout(documentsWidget)
+        # Create a content widget to hold the documents
+        contentWidget = QWidget()
+        contentWidget.setStyleSheet("""
+            background-color: #ffffff;
+            border-radius: 10px;
+            font-family: Arial;
+            color: #000000;
+            padding: 20px;
+        """)
+
+        # Set up the grid layout inside the content widget
+        self.documentsLayout = QGridLayout(contentWidget)
         self.documentsLayout.setContentsMargins(50, 25, 50, 25)
         self.documentsLayout.setSpacing(20)
-        
-        # adding in the gridlayout for the documents
+
+        # Update the grid layout for documents
         self.updateDocuments()
 
-        # adding the layouts to the mainLayout
-        mainLayout.addWidget(navBarWidget) 
-        mainLayout.addWidget(documentsWidget) 
+        # Set the content widget inside the scroll area
+        scrollArea.setWidget(contentWidget)
 
-        # setting the layout to the window
+        # Add the scrollable document display to the main layout
+        mainLayout.addWidget(navBarWidget)
+        mainLayout.addWidget(scrollArea)  # Replacing direct document display with a scrollable area
+
+        # Set the main layout for the window
         self.setLayout(mainLayout)
 
     # go to summarize page
@@ -384,33 +411,42 @@ class MainPage(QWidget):
         # Adding the DocumentPage to the stack and switching to it
         self.stack.addWidget(self.docPage)
         self.stack.setCurrentWidget(self.docPage)
-
-    # updating the gridlayout when something has changed
+        
     def updateDocuments(self):
         # Clear existing widgets from the grid first to avoid duplicates
         for i in reversed(range(self.documentsLayout.count())): 
-            self.documentsLayout.itemAt(i).widget().setParent(None)
+            widget = self.documentsLayout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
 
-        # displaying the files that exist in the directory of summarized notes
+        # Retrieve files from the directory
         self.fileSystem.searchDirectory()
-        fileAmt = self.fileSystem.fileAmt
+        fileNames = self.fileSystem.fileNames
+        fileAmt = len(fileNames)  # Get the actual number of files
 
-        row = 0  # variable initialized represents the rows in the grid
+        columns = 5  # Keep exactly 5 columns at all times
+
+        # Ensure all 5 columns stretch evenly
+        for i in range(columns):
+            self.documentsLayout.setColumnStretch(i, 1)
+
+        row = 0
+        documentWidgets = []  # Store widgets to resize them uniformly later
+
         while fileAmt > 0:
+            for col in range(columns):
+                if fileAmt > 0:
+                    fileIndex = (row * columns) + col
+                    if fileIndex >= len(fileNames):
+                        break
 
-            for col in range(0, 5):
-
-                # only run this code if file size is in range
-                if fileAmt >= 5 or col < fileAmt:
-
-                    # Get file name first
-                    fileIndex = (row * 5) + col
-                    fileName = self.fileSystem.fileNames[fileIndex]
+                    fileName = fileNames[fileIndex]
 
                     # Grey box (container for the file button)
                     documentGridWidget = QWidget()
-                    documentGridWidget.setFixedHeight(250)
-                    documentGridWidget.setFixedWidth(175)
+                    documentGridWidget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
+                    documentGridWidget.setMinimumWidth(120)  # Minimum width
+                    documentGridWidget.setMaximumWidth(250)  # Maximum width to prevent stretching
                     documentGridWidget.setStyleSheet("""
                         QWidget {
                             background-color: #868686; 
@@ -418,106 +454,87 @@ class MainPage(QWidget):
                             font-family: Arial; 
                             color: #000000;
                         }
-                        QWidget:hover {
-                            background-color: #777777;
-                        }
                     """)
-                    # Set the cursor to pointing hand for the entire container
-                    documentGridWidget.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
 
-                    # Setting up the layout for a document and its title
+                    # Apply click event for the entire grey box
+                    documentGridWidget.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+                    documentGridWidget.mousePressEvent = lambda event, name=fileName: self.navigateDocument(name)
+
+                    # Create layout for each document cell
                     documentGrid = QVBoxLayout(documentGridWidget)
-                    documentGrid.setContentsMargins(10, 10, 10, 10)  # Keeps spacing for the inner button
+                    documentGrid.setContentsMargins(10, 10, 10, 10)
                     documentGrid.setSpacing(5)
 
-                    # Blue rectangle (representing document)
-                    documentButton = QPushButton("", parent=documentGridWidget)
-                    documentButton.setStyleSheet("""
-                        QPushButton {
-                            background-color: #CAECF0;
-                            border-radius: 5px;
-                        }
-                        QPushButton:hover {
-                            background-color: #B5DDE0;
-                        }
-                    """)
-                    documentButton.setFixedHeight(150)
-                    documentButton.setFixedWidth(100)
-                    documentButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-                    
-                    # Add onclick to the blue button as well
-                    documentButton.clicked.connect(lambda checked=False, name=fileName: self.navigateDocument(name))
+                    # Load the document icon
+                    docIconPath = "./images/docIcon.png"
+                    docIconLabel = QLabel(documentGridWidget)
+                    docIconPixmap = QPixmap(docIconPath).scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    docIconLabel.setPixmap(docIconPixmap)
+                    docIconLabel.setAlignment(Qt.AlignCenter)
+                    docIconLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-                    # Filename label with hover cursor
+                    # Spacer to center the icon properly
+                    topSpacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
+                    bottomSpacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+                    # Add elements to center the icon properly
+                    documentGrid.addItem(topSpacer)
+                    documentGrid.addWidget(docIconLabel, alignment=Qt.AlignCenter)
+                    documentGrid.addItem(bottomSpacer)
+
+                    # Filename label setup
                     fileNameLabel = QLabel(fileName)
                     fileNameLabel.setAlignment(Qt.AlignCenter)
-                    fileNameLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-                    fileNameLabel.setFixedWidth(155)
-                    fileNameLabel.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-                    
-                    # Apply proper padding and prevent overflow
+                    fileNameLabel.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
+                    fileNameLabel.setWordWrap(True)
                     fileNameLabel.setStyleSheet("""
                         font-size: 14px; 
                         font-weight: bold;
-                        color: #000000;
+                        color: black;
                         background-color: transparent;
                         padding: 5px;
-                        min-width: 155px;
-                        max-width: 155px;
                     """)
 
-                    # Ensure elided text is calculated correctly per QLabel
-                    def updateElidedText(label, fullText):
-                        available_width = label.width() - 20  # Subtract padding for correct fitting
-
-                        # Only apply elision when width is available
-                        if available_width > 0:
-                            metrics = QFontMetrics(label.font())
-                            elidedText = metrics.elidedText(fullText, Qt.ElideRight, available_width)
-                            label.setText(elidedText)
-
-                    # Call the function per label and ensure updates on resize
-                    updateElidedText(fileNameLabel, fileName)
-                    fileNameLabel.resizeEvent = lambda event, lbl=fileNameLabel, text=fileName: updateElidedText(lbl, text)
-
-                    # Add elements to the layout
-                    documentGrid.addWidget(documentButton, alignment=Qt.AlignCenter)
+                    # Add filename label below the icon
                     documentGrid.addWidget(fileNameLabel, alignment=Qt.AlignCenter)
-
-                    # Keep the click event for the entire grey box
-                    documentGridWidget.mousePressEvent = lambda event, name=fileName: self.navigateDocument(name)
 
                     # Add widget to the grid layout
                     self.documentsLayout.addWidget(documentGridWidget, row, col)
 
+                    # Store reference for uniform resizing
+                    documentWidgets.append(documentGridWidget)
+
+                    fileAmt -= 1
                 else:
-                    break 
-            row += 1  # Moving to the next row
-            fileAmt -= 5  # Removing files that have been displayed
+                    break  
+            row += 1
 
-# ------------------- Record Audio Thread ------------------- #
-class RecorderThread(QThread):
-    # Defining the signals that will be used to send messages to and from the thread
-    recordingFinished = pyqtSignal(str)
-    stopRecording = pyqtSignal()
-    def __init__(self):
-        super().__init__()
-        # Connecting the stopRecording signal to the stopRecording method
-        self.stopRecording.connect(self.stopRecordingMethod)
+        # Force a UI refresh to ensure equal sizing
+        self.documentsLayout.update()
+        self.updateGeometry()
+
+    # ------------------- Record Audio Thread ------------------- #
+    class RecorderThread(QThread):
+        # Defining the signals that will be used to send messages to and from the thread
+        recordingFinished = pyqtSignal(str)
+        stopRecording = pyqtSignal()
+        def __init__(self):
+            super().__init__()
+            # Connecting the stopRecording signal to the stopRecording method
+            self.stopRecording.connect(self.stopRecordingMethod)
+            
+        def run(self):
+
+            # Recording the audio
+            filename = Recorder.recordAudio()
+
+            # Emit signal when recording is finished
+            self.recordingFinished.emit(filename)
+
+        def stopRecordingMethod(self):
+            print("Recording stopped")
+            Recorder.setStopRecording(True)
         
-    def run(self):
-
-        # Recording the audio
-        filename = Recorder.recordAudio()
-
-        # Emit signal when recording is finished
-        self.recordingFinished.emit(filename)
-
-    def stopRecordingMethod(self):
-        print("Recording stopped")
-        Recorder.setStopRecording(True)
-        
-
 # -------------------------------------- RECORD AUDIO PAGE ----------------------------------------- #
 # this contains the GUI for the main page of our application
 class RecordAudioPage(QWidget):

@@ -37,7 +37,7 @@ Libraries:
 
 # Usage
 
-**ON MAC**
+**Mac silicon chip OS Specific Depenencies**
 
 ```bash
 pip install torch torchvision torchaudio -f https://download.pytorch.org/whl/metal.html
@@ -45,7 +45,7 @@ brew install ffmpeg libsndfile
 brew install portaudio
 ```
 
-**On Windows**
+**Window OS Specific Depenencies**
 
 Only if you have a GPU:
 ```bash
@@ -57,7 +57,7 @@ ADD SOMETHIGN FOR PORT AUDIO:
 pip install no clue
 ```
 
-**On All OS**
+**For all OS**
 ```bash
 pip install pyannote.audio torch pytorch-lightning
 pip install huggingface_hub

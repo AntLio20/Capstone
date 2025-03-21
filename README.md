@@ -18,19 +18,60 @@ The repository contains a program that will automatically summarize meeting any 
 - Python version: **python3.12**
   
 Libraries:
-- xgboost
-- scikit-learn
-- pandas
-- numpy
+- ffmpeg
+- libsndfile
+- pyannote.audio
+- torch
+- pytorch-lightning
+- huggingface_hub
+- python-docx
+- openai-whisper
+- audioSegment
+- pyaudio
+- PyQt5
+- python-docx
+- Pillow
+- openai
+- tiktoken
+- docx2txt
 
 # Usage
 
 **ON MAC**
+
+
 ```bash
-pip install xgboost scikit-learn pandas numpy  
+pip install torch torchvision torchaudio -f https://download.pytorch.org/whl/metal.html
+brew install ffmpeg libsndfile
+brew install portaudio
 ```
 
 **On Windows**
+Only if you have a GPU:
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+```
+
+ADD SOMETHIGN FOR PORT AUDIO:
+```bash
+pip install no clue
+```
+
+**On All OS**
+```bash
+pip install pyannote.audio torch pytorch-lightning
+pip install huggingface_hub
+pip install python-docx
+pip install openai-whisper
+pip install audioSegment
+pip install pyaudio
+pip install PyQt5
+pip install python-docx
+pip install Pillow
+pip install openai
+pip install tiktoken
+pip install docx2txt
+```
 
 Clone and go to the repository 
 ```bash

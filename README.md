@@ -7,7 +7,7 @@ Capstone Coordinator: Dr. Q. Mahmoud
 # Introduction
 The repository contains a program that will automatically summarize meeting any given meeting transcripts. 
 
-# # Features
+## Features
 - Record audio
 - Transcribe and perform speaker siarization on audio clips
 - Summarize transcriptions
@@ -34,9 +34,9 @@ pip install xgboost scikit-learn pandas numpy
 
 Clone and go to the repository 
 ```bash
-git clone https://github.com/Javiebear/NBALineupPredictor
+git clone https://github.com/AntLio20/Capstone
 ```
 Execute Script
 ```bash
-python model.py
+python gui.py
 ```

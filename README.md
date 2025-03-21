@@ -39,7 +39,6 @@ Libraries:
 
 **ON MAC**
 
-
 ```bash
 pip install torch torchvision torchaudio -f https://download.pytorch.org/whl/metal.html
 brew install ffmpeg libsndfile
@@ -47,6 +46,7 @@ brew install portaudio
 ```
 
 **On Windows**
+
 Only if you have a GPU:
 ```bash
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118

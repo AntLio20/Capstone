@@ -513,27 +513,27 @@ class MainPage(QWidget):
         self.documentsLayout.update()
         self.updateGeometry()
 
-    # ------------------- Record Audio Thread ------------------- #
-    class RecorderThread(QThread):
-        # Defining the signals that will be used to send messages to and from the thread
-        recordingFinished = pyqtSignal(str)
-        stopRecording = pyqtSignal()
-        def __init__(self):
-            super().__init__()
-            # Connecting the stopRecording signal to the stopRecording method
-            self.stopRecording.connect(self.stopRecordingMethod)
-            
-        def run(self):
+# ------------------- Record Audio Thread ------------------- #
+class RecorderThread(QThread):
+    # Defining the signals that will be used to send messages to and from the thread
+    recordingFinished = pyqtSignal(str)
+    stopRecording = pyqtSignal()
+    def __init__(self):
+        super().__init__()
+        # Connecting the stopRecording signal to the stopRecording method
+        self.stopRecording.connect(self.stopRecordingMethod)
+        
+    def run(self):
 
-            # Recording the audio
-            filename = Recorder.recordAudio()
+        # Recording the audio
+        filename = Recorder.recordAudio()
 
-            # Emit signal when recording is finished
-            self.recordingFinished.emit(filename)
+        # Emit signal when recording is finished
+        self.recordingFinished.emit(filename)
 
-        def stopRecordingMethod(self):
-            print("Recording stopped")
-            Recorder.setStopRecording(True)
+    def stopRecordingMethod(self):
+        print("Recording stopped")
+        Recorder.setStopRecording(True)
         
 # -------------------------------------- RECORD AUDIO PAGE ----------------------------------------- #
 # this contains the GUI for the main page of our application

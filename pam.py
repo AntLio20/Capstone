@@ -4,8 +4,9 @@
 
 import Minutes
 import Transcript
-
+import GPT as gpt
 import docx2txt
+import testing as deepseekLocal
 
 # this function will run the summarization of our program
 def summarize(filepath, model):
@@ -29,12 +30,17 @@ def summarize(filepath, model):
     # deepseek r1 model for summarization, redaction and actionable items
     if (model == 0):
         print("r1 model code")
+        deepseekLocal.deepseekr18b(transcript)
+
     # deepseek api model for summarization, redaction and actionable items
     elif (model == 1):
+        gpt.deepseekAPI(transcript)
         print("deepseek api model code")
+
     # openai api model for summarization, redaction and actionable items
     elif (model == 2):
         print("open api model code")
+        print(gpt.gptSummarization(transcript))
 
 
     # Create file name and generate minutes document and summary terminal output

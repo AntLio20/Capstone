@@ -1,5 +1,7 @@
 import openai
 import tiktoken
+from openai import OpenAI
+import docx2txt
 import Transcript
 from datetime import datetime
 
@@ -13,6 +15,23 @@ sectionHeadings = ["Opening", "Present", "Absent", "Agenda Approval", "Previous 
 
 # function converts the transcript into chunks where it would be stored into an array
 def chunkToText(transcript, max_token, totalChunks = 0):
+    # gpt-4o is being used for the tokenization
+    encoding = tiktoken.get_encoding("cl100k_base")
+    tokens = encoding.encode(transcript)
+
+    # sets up an array to hold the list of chunks
+    chunks = []
+
+    # goes through the transcript and chops it up into chunks
+    i = 0
+    while i < len(tokens):
+        chunk = tokens[i:i + max_token]
+        chunks.append(encoding.decode(chunk))
+        i = i + max_token
+        totalChunks += 1
+    return chunks, totalChunks
+
+def chunkToTextGPT(transcript, max_token, totalChunks = 0):
     # gpt-4o is being used for the tokenization
     encoding = tiktoken.encoding_for_model("gpt-4o")
     tokens = encoding.encode(transcript)
@@ -30,28 +49,19 @@ def chunkToText(transcript, max_token, totalChunks = 0):
     return chunks, totalChunks
 
 
-def gptSummarization(transcript, filepath):
+def gptSummarization(filepath):
     # Connecting to OpenAI
-    # key = "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"
-
-    # initializing a list that will store different parts of the summarized transcript
-    global meetingNotesList
-    meetingNotesList = []
-    sectionHeadings = ["Opening", "Present", "Absent", "Agenda Approval", "Previous Meeting Approval",
-                       "Previous Meeting Summary", "Summary of Meeting", "Adjournment"]
+    openai.api_key = "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"
 
     # initializing a counter for each section
     sectionCounter = 0
 
     # converts the document to a string
-    #transcript = docx2txt.process(filepath)
-    max_tokens = 10000
-
-    # extracts the date and time of transcript creation for use in minutes and file naming
-    date = Transcript.extractFormalDate(filepath)
+    transcript = docx2txt.process(filepath)
+    max_tokens = 50000
 
     # calls function to separate string into chunks each fitting the max tokens
-    transcript_chunks, totalChunks = chunkToText(transcript, max_tokens)
+    transcript_chunks, totalChunks = chunkToTextGPT(transcript, max_tokens)
 
     # designates the chunk number to gpt
     chunkCounter = 1
@@ -63,7 +73,7 @@ def gptSummarization(transcript, filepath):
     for chunk in transcript_chunks:
         print(f"Chunk number #{chunkCounter}\n")
         completion = openai.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4.5-preview-2025-02-27",
             messages=[
                 {"role": "assistant", "content": "You are a highly accurate assistant. Your task is to read the provided transcript and create meeting minutes. The transcript will be sent in chunks to ensure you read every line."},
                 {
@@ -87,7 +97,7 @@ def gptSummarization(transcript, filepath):
             ],
             # this is used to get real time response word for word
             stream=True,
-            temperature=0.1,
+            temperature=1,
         )
 
         # Process streaming responses
@@ -113,13 +123,8 @@ def gptSummarization(transcript, filepath):
     for heading, note in zip(sectionHeadings, meetingNotesList):
         print(f"{note}\n")
 
-# similar to gpt, but will be using the deepseek reasoner 
 def deepseekAPI(filepath):
     client = OpenAI(api_key="sk-babbed6e88f6401d91e35ebd5808d5b5", base_url="https://api.deepseek.com")
-
-    meetingNotesList = []
-    sectionHeadings = ["Opening", "Present", "Absent", "Agenda Approval", "Previous Meeting Approval",
-                       "Previous Meeting Summary", "Summary of Meeting", "Adjournment", "Hallucenation"]
 
     # initializing a counter for each section
     sectionCounter = 0
@@ -139,12 +144,11 @@ def deepseekAPI(filepath):
     print(f"Summarization Date: " + dt_string + "\n")
     print(f"Your transcript will be split into a total of {totalChunks} chunks\n")
 
-
     # this code below is used to submit a prompt to the OpenAI API, a for loop to go through all chunks
     print("Currently processing each chunk: \n")
     for chunk in transcript_chunks:
         print(f"Chunk number #{chunkCounter}\n")
-        response = client.chat.completions.create(
+        completion = client.chat.completions.create(
             model="deepseek-reasoner",
             messages=[
                 {"role": "system",
@@ -165,7 +169,6 @@ def deepseekAPI(filepath):
                         "6. Summary of last meeting notes and decisions\n"
                         "7. Detailed summary and key points of the topic of the current meeting\n"
                         "8. Adjournment time, bascially the end time\n"
-                        "9. Hallucenation % and your confidence level in it "
                         "Only use the information provided in the transcript"
                     )
                 }
@@ -175,9 +178,9 @@ def deepseekAPI(filepath):
 
         # Process streaming responses
         response_text = ""
-        for part in response:
+        for _ in completion:
             # Access 'content' directly and check if it's not None
-            content = response.choices[0].message.content
+            content = completion.choices[0].message.content
             if content is not None:
                 response_text += content
 
@@ -187,6 +190,10 @@ def deepseekAPI(filepath):
 
         # increase chunk counter to move to the next chunk
         chunkCounter += 1
+
+    # Displays the organized meeting notes
+    print("----------------------------------------------------")
+    print("Meeting Summary: \n")
 
     # assigns each section of the meeting notes to the header of each section
     for heading, note in zip(sectionHeadings, meetingNotesList):

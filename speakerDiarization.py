@@ -31,14 +31,14 @@ import Transcriber
 from datetime import datetime
 import logging
 from pydub import AudioSegment
-from SpeakerID import identify_and_replace_speakers
+from speakerID import identify_and_replace_speakers
 
 # Defining global static variables
 DIARIZATION_MODEL_CACHE_DIR = "./DiarizationModel"
 TRANSCRIPT_DIR = "./diarizedTranscripts"
 
 def transcribeAndDiarize(modelType, file):
-    from SpeakerID import identify_and_replace_speakers  # Safe to re-import inside function if needed
+    from speakerID import identify_and_replace_speakers  # Safe to re-import inside function if needed
 
     # File save path
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -80,21 +80,3 @@ def transcribeAndDiarize(modelType, file):
     print(f"Transcript saved in {(totalEndTime - totalStartTime):.2f} seconds at {filepath}")
 
     return filepath
-
-# deleting the audio file as it is no longer needed
-def deleteAudioFile(file):
-    if os.path.exists(file):
-        os.remove(file)
-
-# muting all the logs 
-logging.getLogger("speechbrain").setLevel(logging.ERROR)
-
-# Authenticating with Hugging Face
-login(token = "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")
-
-# Setting up the device to perform diarizazation
-diarizationProcessor = "mps" if torch.backends.mps.is_available() else "cuda" if  torch.cuda.is_available() else "cpu"
-
-# Loading in both models for speaker diarization
-pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1", cache_dir = DIARIZATION_MODEL_CACHE_DIR)
-pipeline.to(torch.device(diarizationProcessor))

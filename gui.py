@@ -956,9 +956,6 @@ class RecordAudioPage(QWidget):
         # Pass the full path to the transcription function
         filepath = speakerDiarization.transcribeAndDiarize(self.dropdown.currentIndex(), recordedFile)
 
-        # No need to delete the audio file as we want to keep it
-        # speakerDiarization.deleteAudioFile(recordedFile)
-
         # have a pop up saying transcript created in {folder}
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)

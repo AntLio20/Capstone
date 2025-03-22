@@ -136,3 +136,36 @@ class FileSystem:
             print(f"Error parsing document {fileName}: {str(e)}")
             # Return document as a single section with error message
             return [("Error Reading Document", f"There was an error parsing this document: {str(e)}")]
+
+
+    def searchAudioDirectory(self):
+        """Searches the MeetingRecordings directory for audio files"""
+        import os
+
+        self.audioDirectory = "MeetingRecordings"
+        self.audioFileNames = []
+
+        # Create directory if it doesn't exist
+        if not os.path.exists(self.audioDirectory):
+            os.makedirs(self.audioDirectory)
+            return
+
+        # Get all .wav files in the directory
+        for file in os.listdir(self.audioDirectory):
+            if file.endswith(".wav"):
+                self.audioFileNames.append(file)
+
+        # Sort files by creation date (newest first)
+        self.audioFileNames.sort(key=lambda x: os.path.getctime(os.path.join(self.audioDirectory, x)), reverse=True)
+
+
+    # Add this method to get the size of an audio file
+    def getAudioSize(self, fileName):
+        """Gets the size of an audio file in MB"""
+        import os
+
+        filePath = os.path.join(self.audioDirectory, fileName)
+        sizeInBytes = os.path.getsize(filePath)
+        sizeInMB = sizeInBytes / (1024 * 1024)
+
+        return f"{sizeInMB:.2f} MB"

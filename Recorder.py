@@ -12,30 +12,38 @@ import pyaudio
 import threading
 from datetime import datetime
 
+
 def recordAudio():
+    import os
+
+    # Create MeetingRecordings directory if it doesn't exist
+    recordings_dir = "MeetingRecordings"
+    if not os.path.exists(recordings_dir):
+        os.makedirs(recordings_dir)
+
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"{timestamp}-tmpRecording.wav"
+    filename = f"{timestamp}-recording.wav"
+    filepath = os.path.join(recordings_dir, filename)
+
     CHUNK = 1024
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
     RATE = 16000
     voiceDetectionAudio = pyaudio.PyAudio()
 
-
     stream = voiceDetectionAudio.open(format=FORMAT,
                                       channels=CHANNELS,
-                                      rate=RATE, 
-                                      input=True, 
+                                      rate=RATE,
+                                      input=True,
                                       frames_per_buffer=CHUNK)
 
     print("Currently Recording...")
 
     setStopRecording(False)
 
-
     frames = []
 
-    isRecording.set() # starting the recording proccess by setting the state to true which signals thread to continue running
+    isRecording.set()  # starting the recording proccess by setting the state to true which signals thread to continue running
 
     # creating a thread to track when a user wants to interrupt and terminate the recording
     intruptThread = threading.Thread(target=isDoneRecording)
@@ -56,14 +64,14 @@ def recordAudio():
     voiceDetectionAudio.terminate()
 
     # Saving the recorded audio as a wave file
-    waveFile = wave.open(filename, 'wb')
+    waveFile = wave.open(filepath, 'wb')
     waveFile.setnchannels(CHANNELS)
     waveFile.setsampwidth(voiceDetectionAudio.get_sample_size(FORMAT))
     waveFile.setframerate(RATE)
     waveFile.writeframes(b''.join(frames))
     waveFile.close()
 
-    return(filename)
+    return filepath  # Return full path to the recording
 
 # this function uses another thread to poll a keyboard input that will end the recording of a user
 def isDoneRecording():

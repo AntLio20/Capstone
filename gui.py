@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, 
 from PyQt5.QtGui import QPalette, QColor, QFont, QPixmap, QCursor
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QFileDialog
 import sys
 from FileSystem import FileSystem
 import pam
@@ -857,7 +858,7 @@ class SummarizationPage(QWidget):
         palette.setColor(QPalette.Window, QColor('#DFDFDF'))
         self.setPalette(palette)
         self.setAutoFillBackground(True)
-        
+
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(40)
         shadow.setXOffset(10)
@@ -929,27 +930,33 @@ class SummarizationPage(QWidget):
         self.drawDropDown()
 
         # adding the components to the mainLayout
-        mainLayout.addWidget(navBarWidget) 
-        
+        mainLayout.addWidget(navBarWidget)
+
         # Add spacing between navbar and drop box
         mainLayout.addSpacing(15)
-        
+
         mainLayout.addWidget(self.dropBox)
 
         # Add spacing between drop box and drop down
         mainLayout.addSpacing(15)
 
         mainLayout.addWidget(self.dropdown)
-        
-        # Add a bit of spacing before the button
+
+        # Add a bit of spacing before the buttons
         mainLayout.addSpacing(10)
-        
-        mainLayout.addWidget(self.summarizeButton)
-        
+
+        # Create a horizontal layout for the buttons
+        buttonLayout = QHBoxLayout()
+        buttonLayout.addWidget(self.browseButton)
+        buttonLayout.addWidget(self.summarizeButton)
+
+        # Add button layout to main layout
+        mainLayout.addLayout(buttonLayout)
+
         # aligning the widgets
         mainLayout.setAlignment(self.dropBox, Qt.AlignCenter)
         mainLayout.setAlignment(self.dropdown, Qt.AlignCenter)
-        mainLayout.setAlignment(self.summarizeButton, Qt.AlignCenter)
+        buttonLayout.setAlignment(Qt.AlignCenter)
 
         # setting the layout to the window
         self.setLayout(mainLayout)
@@ -1009,7 +1016,7 @@ class SummarizationPage(QWidget):
             self.dropBox.setText("Drop File Here")
         else:
             # creating a label where the user can drag and drop files to summarize
-            self.setAcceptDrops(True) # allows drags and drops
+            self.setAcceptDrops(True)  # allows drags and drops
             self.dropBox = QLabel("Drop File Here", self)
             self.dropBox.setWordWrap(True)
             self.dropBox.setStyleSheet("border: 3px dashed #000000; font-size: 20px;")
@@ -1035,6 +1042,43 @@ class SummarizationPage(QWidget):
             self.summarizeButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
             self.summarizeButton.setGraphicsEffect(shadow)
             self.summarizeButton.clicked.connect(lambda: self.summarize(self.dropBox.text()))
+
+            # Creating a "Browse Files" button
+            self.browseButton = QPushButton(text="Browse Files", parent=self)
+            self.browseButton.setStyleSheet("""
+                QPushButton {
+                    background-color: #E9E9E9; 
+                    font-size: 15px; 
+                    color: #000000; 
+                    padding: 10px;
+                    border-radius: 8px;
+                }
+                QPushButton:hover {
+                    background-color: #D6D6D6;
+                }
+            """)
+            self.browseButton.setFixedWidth(150)
+            self.browseButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+            self.browseButton.setGraphicsEffect(shadow)
+            self.browseButton.clicked.connect(self.browseFiles)
+
+    # Add this new method for file browsing functionality
+    def browseFiles(self):
+        options = QFileDialog.Options()
+        filePath, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select File to Summarize",
+            "",
+            "All Files (*);;Text Files (*.txt);;Word Documents (*.docx);;PDF Files (*.pdf)",
+            options=options
+        )
+
+        if filePath:
+            # Extract just the filename from the path
+            fileName = filePath.split('/')[-1]
+            # Update the drop box text with the selected file
+            self.dropBox.setText(filePath)
+
 
 # this contains the GUI for opening up a document
 class DocumentPage(QWidget):

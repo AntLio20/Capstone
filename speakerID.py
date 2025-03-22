@@ -1,26 +1,48 @@
 import re
 import spacy
-import csv
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Load spaCy model with NER capabilities
 nlp = spacy.load("en_core_web_lg")
 
-# Path to the intro phrase CSV (update if needed)
-INTRODUCTION_PHRASES_FILE = "introduction_phrases.csv"
+# Introduction phrases for fuzzy logic
+intro_phrases = [
+    "Hi, my name is",
+    "Hello, my name is",
+    "Hey, my name is",
+    "Hi, I'm",
+    "Hello, I'm",
+    "Hey, I'm",
+    "I am",
+    "I'm",
+    "My name is",
+    "This is",
+    "It's me,",
+    "You can call me",
+    "I go by",
+    "People call me",
+    "Let me introduce myself, I am",
+    "Allow me to introduce myself, I'm",
+    "Nice to meet you, I'm",
+    "Pleasure to meet you, my name is",
+    "Hey everyone, I'm",
+    "Hi there, my name is",
+    "Hello everyone, my name is",
+    "Hey folks, I’m",
+    "For those who don’t know me, I’m",
+    "If you haven’t met me before, I’m",
+    "By the way, I’m",
+    "You might know me as",
+    "Just so you know, I’m",
+    "Let me quickly introduce myself, I’m",
+    "I just wanted to say, I’m",
+    "Hi all, I’m",
+    "Hello all, my name is",
+    "Hey team, my name is"
+]
 
-# Load introduction phrases and create embeddings
-def loadIntroductionPhrases(file_path):
-    phrases = []
-    with open(file_path, "r", newline='', encoding="utf-8") as file:
-        reader = csv.reader(file)  
-        for row in reader:
-            if row:
-                phrases.append(row[0].strip())
-    return phrases
-
-intro_phrases = loadIntroductionPhrases(INTRODUCTION_PHRASES_FILE)
+# Pre-compute embeddings for fuzzy comparison
 intro_embeddings = [nlp(phrase).vector for phrase in intro_phrases]
 
 # First-person pronoun check
@@ -122,14 +144,12 @@ def identify_and_replace_speakers(transcript: str) -> str:
 
     # Replace speaker labels in the final output using updated identifiers
     final_output = []
-    current_speaker = None
     for line in processed_lines:
         match = re.match(r"SPEAKER_(\d+)", line)
         if match:
             speaker_num = int(match.group(1))
             identifier = speaker_identifiers[speaker_num]
             final_output.append(str(identifier))
-            current_speaker = identifier
         else:
             final_output.append(line)
 

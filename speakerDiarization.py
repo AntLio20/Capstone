@@ -27,63 +27,59 @@ import time
 import math
 import os
 from docx import Document
-import wave
 import Transcriber
 from datetime import datetime
 import logging
 from pydub import AudioSegment
+from SpeakerID import identify_and_replace_speakers
 
 # Defining global static variables
 DIARIZATION_MODEL_CACHE_DIR = "./DiarizationModel"
 TRANSCRIPT_DIR = "./diarizedTranscripts"
 
 def transcribeAndDiarize(modelType, file):
+    from SpeakerID import identify_and_replace_speakers  # Safe to re-import inside function if needed
 
-    # Setting the file path to the desktop of the host OS
+    # File save path
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filepath = os.path.join(TRANSCRIPT_DIR, f"{timestamp}-transcript.docx")
 
     totalStartTime = time.time()
 
-    # applying pretrained pipeline to the audio clip
+    # Diarize
     print("loading audio file into diarization model...:\n")
     loadingStartTime = time.time()
     diarization = pipeline({"audio": file})
     loadingEndTime = time.time()
-    elapsedLoadingtimeMin = int((loadingEndTime - loadingStartTime)//60)
-    elapsedLoadingTimeSec = int(math.ceil((loadingEndTime - loadingStartTime)%60))
-    print(f"speaker-diarization-3.1 has successfully loaded and diarizaed the audio file with the time of {elapsedLoadingtimeMin} mins and {elapsedLoadingTimeSec} secs \n\n\n\n")
+    print(f"speaker-diarization-3.1 loaded in {(loadingEndTime - loadingStartTime):.2f} seconds.\n")
 
-    # Creating a new document to store the transcript
-    doc = Document()
-    
-    # Opening the audio file to enable segmenting
+    # Audio segment
     audio = AudioSegment.from_file(file)
 
-    # converting the audio clip into a trascription
+    # Build full transcript string
+    full_transcript = ""
     for turn, _, speaker in diarization.itertracks(yield_label=True):
-
-        # getting the time started and ended of the segment that one speaker spoke for
         startTime = turn.start
         endTime = turn.end
-
         text = Transcriber.transcribeAudio(audio, startTime, endTime, modelType)
 
-        doc.add_paragraph(f"{startTime} --> {endTime}")
-        doc.add_paragraph(f"{speaker}")
-        doc.add_paragraph(f"{text}\n")
+        full_transcript += f"{startTime} --> {endTime}\n"
+        full_transcript += f"{speaker}\n"
+        full_transcript += f"{text}\n"
 
-    # saving the document
+    # Run speaker identification
+    full_transcript = identify_and_replace_speakers(full_transcript)
+
+    # Save the transcript to a DOCX file
+    doc = Document()
+    for line in full_transcript.splitlines():
+        doc.add_paragraph(line)
     doc.save(filepath)
 
     totalEndTime = time.time()
+    print(f"Transcript saved in {(totalEndTime - totalStartTime):.2f} seconds at {filepath}")
 
-    elapsedtotaltimeMin = (int)((totalEndTime - totalStartTime)//60)
-    elapsedTotalTimeSec = (int)(math.ceil((totalEndTime - totalStartTime)%60))
-
-    print(f"Finished Creating Transcript with time of {elapsedtotaltimeMin} mins and {elapsedTotalTimeSec} secs")
-
-    return(filepath)
+    return filepath
 
 # deleting the audio file as it is no longer needed
 def deleteAudioFile(file):

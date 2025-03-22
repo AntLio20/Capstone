@@ -412,10 +412,10 @@ class MainPage(QWidget):
         # Adding the DocumentPage to the stack and switching to it
         self.stack.addWidget(self.docPage)
         self.stack.setCurrentWidget(self.docPage)
-        
+
     def updateDocuments(self):
         # Clear existing widgets from the grid first to avoid duplicates
-        for i in reversed(range(self.documentsLayout.count())): 
+        for i in reversed(range(self.documentsLayout.count())):
             widget = self.documentsLayout.itemAt(i).widget()
             if widget:
                 widget.deleteLater()
@@ -446,8 +446,9 @@ class MainPage(QWidget):
                     # Grey box (container for the file button)
                     documentGridWidget = QWidget()
                     documentGridWidget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
-                    documentGridWidget.setMinimumWidth(120)  # Minimum width
-                    documentGridWidget.setMaximumWidth(250)  # Maximum width to prevent stretching
+                    documentGridWidget.setMinimumWidth(150)
+                    documentGridWidget.setMaximumWidth(300)
+                    documentGridWidget.setMinimumHeight(200)  # Increased height
                     documentGridWidget.setStyleSheet("""
                         QWidget {
                             background-color: #868686; 
@@ -464,30 +465,35 @@ class MainPage(QWidget):
                     # Create layout for each document cell
                     documentGrid = QVBoxLayout(documentGridWidget)
                     documentGrid.setContentsMargins(10, 10, 10, 10)
-                    documentGrid.setSpacing(5)
+                    documentGrid.setSpacing(10)  # Increased spacing
 
                     # Load the document icon
                     docIconPath = "./images/docIcon.png"
                     docIconLabel = QLabel(documentGridWidget)
-                    docIconPixmap = QPixmap(docIconPath).scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    docIconPixmap = QPixmap(docIconPath).scaled(70, 70, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                     docIconLabel.setPixmap(docIconPixmap)
                     docIconLabel.setAlignment(Qt.AlignCenter)
                     docIconLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-                    # Spacer to center the icon properly
-                    topSpacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
-                    bottomSpacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
+                    # Create text label with explicit text elision control
+                    fileNameLabel = QLabel(documentGridWidget)
 
-                    # Add elements to center the icon properly
-                    documentGrid.addItem(topSpacer)
-                    documentGrid.addWidget(docIconLabel, alignment=Qt.AlignCenter)
-                    documentGrid.addItem(bottomSpacer)
+                    # If filename is too long (>15 chars), wrap it to multiple lines
+                    displayText = fileName
+                    if len(fileName) > 20:
+                        # Insert line breaks at appropriate points
+                        words = fileName.split('_')
+                        if len(words) > 1:
+                            # If filename contains underscores, break at underscores
+                            displayText = '\n'.join(words)
+                        else:
+                            # Otherwise, break at reasonable points
+                            displayText = fileName[:15] + '\n' + fileName[15:]
 
-                    # Filename label setup
-                    fileNameLabel = QLabel(fileName)
+                    fileNameLabel.setText(displayText)
                     fileNameLabel.setAlignment(Qt.AlignCenter)
-                    fileNameLabel.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
                     fileNameLabel.setWordWrap(True)
+                    fileNameLabel.setMinimumHeight(80)  # Ensure enough space for multiple lines
                     fileNameLabel.setStyleSheet("""
                         font-size: 14px; 
                         font-weight: bold;
@@ -496,8 +502,11 @@ class MainPage(QWidget):
                         padding: 5px;
                     """)
 
-                    # Add filename label below the icon
+                    # Add elements to layout
+                    documentGrid.addWidget(docIconLabel, alignment=Qt.AlignCenter)
                     documentGrid.addWidget(fileNameLabel, alignment=Qt.AlignCenter)
+                    documentGrid.setStretch(0, 1)  # Icon gets less space
+                    documentGrid.setStretch(1, 2)  # Text gets more space
 
                     # Add widget to the grid layout
                     self.documentsLayout.addWidget(documentGridWidget, row, col)
@@ -507,10 +516,14 @@ class MainPage(QWidget):
 
                     fileAmt -= 1
                 else:
-                    break  
+                    break
             row += 1
 
-        # Force a UI refresh to ensure equal sizing
+        # Set more spacing between grid cells
+        self.documentsLayout.setHorizontalSpacing(20)
+        self.documentsLayout.setVerticalSpacing(20)
+
+        # Force a UI refresh
         self.documentsLayout.update()
         self.updateGeometry()
 

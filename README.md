@@ -52,9 +52,9 @@ Only if you have a GPU:
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
-ADD SOMETHIGN FOR PORT AUDIO:
+Speaker ID:
 ```bash
-pip install no clue
+python -m spacy download en_core_web_lg
 ```
 
 **For all OS**
@@ -71,6 +71,7 @@ pip install Pillow
 pip install openai
 pip install tiktoken
 pip install docx2txt
+
 ```
 
 Clone and go to the repository 

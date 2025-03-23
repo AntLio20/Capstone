@@ -10,7 +10,7 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QSizePolicy, QGraphicsDropShadowEffect, QGridLayout, QFrame, QScrollArea, QComboBox, QSpacerItem
 from PyQt5.QtGui import QPalette, QColor, QFont, QPixmap, QCursor
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QFileDialog, QButtonGroup
 import sys
 from FileSystem import FileSystem
 import pam
@@ -253,23 +253,24 @@ class MainPage(QWidget):
     def __init__(self, stack):
         super().__init__()
 
-        self.stack = stack 
-
-        self.fileSystem = FileSystem() # initializing the FileSystem 
+        self.stack = stack
+        self.fileSystem = FileSystem()  # initializing the FileSystem
+        self.showingRecordings = False  # Track which view we're showing
 
         # setting the background color
         palette = self.palette()
         palette.setColor(QPalette.Window, QColor('#DFDFDF'))
         self.setPalette(palette)
         self.setAutoFillBackground(True)
-        self.setStyleSheet("QLabel{color: #000000;}") # setting the default text color for all labels
+        self.setStyleSheet("QLabel{color: #000000;}")  # setting the default text color for all labels
 
         # setting up the layout
         mainLayout = QVBoxLayout()
 
         # Creating the header bar at the top which will include the logo and buttons
         navBarWidget = QWidget()
-        navBarWidget.setStyleSheet("background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")  
+        navBarWidget.setStyleSheet(
+            "background-color: #ffffff; border-radius: 10px; font-family: Arial; text-align: center;")
         navBarWidget.setFixedHeight(150)
         navBarLayout = QHBoxLayout(navBarWidget)
         navBarLayout.setContentsMargins(50, 25, 50, 25)
@@ -277,8 +278,8 @@ class MainPage(QWidget):
         # Adding the logo
         logoImageLabel = QLabel(self)
 
-        # Loading the image 
-        logo = QPixmap("./images/pamLogo (1).png")  
+        # Loading the image
+        logo = QPixmap("./images/pamLogo (1).png")
         logoImageLabel.setPixmap(logo)
 
         # setting up the size
@@ -295,7 +296,7 @@ class MainPage(QWidget):
             button.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
 
             layout = QVBoxLayout(button)
-            layout.setSpacing(5)  
+            layout.setSpacing(5)
             layout.setAlignment(QtCore.Qt.AlignCenter)
 
             iconLabel = QLabel()
@@ -332,6 +333,9 @@ class MainPage(QWidget):
         # Add buttons to navbar
         navBarLayout.addWidget(summarizeButton)
         navBarLayout.addWidget(recordButton)
+
+        # Create toggle view control
+        toggleViewWidget = self.createToggleView()
 
         # Create a scrollable area for the document grid
         scrollArea = QScrollArea()
@@ -379,18 +383,100 @@ class MainPage(QWidget):
         self.documentsLayout.setContentsMargins(50, 25, 50, 25)
         self.documentsLayout.setSpacing(20)
 
-        # Update the grid layout for documents
-        self.updateDocuments()
-
         # Set the content widget inside the scroll area
         scrollArea.setWidget(contentWidget)
 
-        # Add the scrollable document display to the main layout
+        # Add the navbar and toggle view to the main layout
         mainLayout.addWidget(navBarWidget)
-        mainLayout.addWidget(scrollArea)  # Replacing direct document display with a scrollable area
+        mainLayout.addWidget(toggleViewWidget)
+        mainLayout.addWidget(scrollArea)
 
         # Set the main layout for the window
         self.setLayout(mainLayout)
+
+        # Update the grid layout for documents
+        self.updateDocuments(show_recordings=False)
+
+    def createToggleView(self):
+        """Creates a toggle control to switch between transcripts and recordings view"""
+        # Create a container for the toggle
+        toggleContainer = QWidget()
+        toggleContainer.setStyleSheet("""
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 10px;
+        """)
+        toggleContainer.setFixedHeight(60)
+
+        # Create horizontal layout for the toggle
+        toggleLayout = QHBoxLayout(toggleContainer)
+        toggleLayout.setContentsMargins(20, 5, 20, 5)
+
+        # Create label for the toggle
+        viewLabel = QLabel("View:")
+        viewLabel.setStyleSheet("font-size: 16px; font-weight: bold;")
+        toggleLayout.addWidget(viewLabel)
+
+        # Add spacer
+        toggleLayout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))
+
+        # Create a button group for mutual exclusion
+        self.viewButtonGroup = QButtonGroup(self)
+
+        # Create radio buttons for toggle options
+        self.transcriptsRadio = QPushButton("Transcripts")
+        self.transcriptsRadio.setCheckable(True)
+        self.transcriptsRadio.setChecked(True)  # Default to transcripts view
+        self.transcriptsRadio.setStyleSheet("""
+            QPushButton {
+                background-color: #E9E9E9;
+                border-radius: 8px;
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+            QPushButton:checked {
+                background-color: #4682B4;
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: #D6D6D6;
+            }
+        """)
+
+        self.recordingsRadio = QPushButton("Recordings")
+        self.recordingsRadio.setCheckable(True)
+        self.recordingsRadio.setStyleSheet("""
+            QPushButton {
+                background-color: #E9E9E9;
+                border-radius: 8px;
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+            QPushButton:checked {
+                background-color: #4682B4;
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: #D6D6D6;
+            }
+        """)
+
+        # Add buttons to the button group
+        self.viewButtonGroup.addButton(self.transcriptsRadio)
+        self.viewButtonGroup.addButton(self.recordingsRadio)
+
+        # Add buttons to layout
+        toggleLayout.addWidget(self.transcriptsRadio)
+        toggleLayout.addWidget(self.recordingsRadio)
+
+        # Add spacer to push buttons to the left
+        toggleLayout.addStretch(1)
+
+        # Connect toggle buttons to update view
+        self.transcriptsRadio.clicked.connect(lambda: self.updateDocuments(show_recordings=False))
+        self.recordingsRadio.clicked.connect(lambda: self.updateDocuments(show_recordings=True))
+
+        return toggleContainer
 
     # go to summarize page
     def navigateSummarize(self):
@@ -411,19 +497,36 @@ class MainPage(QWidget):
         # Adding the DocumentPage to the stack and switching to it
         self.stack.addWidget(self.docPage)
         self.stack.setCurrentWidget(self.docPage)
-        
-    def updateDocuments(self):
+
+    def updateDocuments(self, show_recordings=None):
+        """Update the documents grid based on the selected view type"""
+        # If show_recordings is None, use current state
+        if show_recordings is None:
+            show_recordings = self.showingRecordings
+        else:
+            self.showingRecordings = show_recordings
+
         # Clear existing widgets from the grid first to avoid duplicates
-        for i in reversed(range(self.documentsLayout.count())): 
+        for i in reversed(range(self.documentsLayout.count())):
             widget = self.documentsLayout.itemAt(i).widget()
             if widget:
                 widget.deleteLater()
 
-        # Retrieve files from the directory
-        self.fileSystem.searchDirectory()
-        fileNames = self.fileSystem.fileNames
-        fileAmt = len(fileNames)  # Get the actual number of files
+        # Retrieve files based on the view type
+        if show_recordings:
+            self.fileSystem.searchAudioDirectory()
+            fileNames = self.fileSystem.audioFileNames
+            iconPath = "./images/audioIcon.png"  # You need to create/add this icon
+            directory = self.fileSystem.audioDirectory
+            getSize = self.fileSystem.getAudioSize
+        else:
+            self.fileSystem.searchDirectory()
+            fileNames = self.fileSystem.fileNames
+            iconPath = "./images/docIcon.png"
+            directory = self.fileSystem.fileDirectory
+            getSize = self.fileSystem.getSize
 
+        fileAmt = len(fileNames)  # Get the actual number of files
         columns = 5  # Keep exactly 5 columns at all times
 
         # Ensure all 5 columns stretch evenly
@@ -445,8 +548,9 @@ class MainPage(QWidget):
                     # Grey box (container for the file button)
                     documentGridWidget = QWidget()
                     documentGridWidget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
-                    documentGridWidget.setMinimumWidth(120)  # Minimum width
-                    documentGridWidget.setMaximumWidth(250)  # Maximum width to prevent stretching
+                    documentGridWidget.setMinimumWidth(150)
+                    documentGridWidget.setMaximumWidth(300)
+                    documentGridWidget.setMinimumHeight(200)  # Increased height
                     documentGridWidget.setStyleSheet("""
                         QWidget {
                             background-color: #868686; 
@@ -458,35 +562,48 @@ class MainPage(QWidget):
 
                     # Apply click event for the entire grey box
                     documentGridWidget.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-                    documentGridWidget.mousePressEvent = lambda event, name=fileName: self.navigateDocument(name)
+                    if show_recordings:
+                        documentGridWidget.mousePressEvent = lambda event, name=fileName, dir=directory: self.openAudioFile(name, dir)
+                    else:
+                        documentGridWidget.mousePressEvent = lambda event, name=fileName: self.navigateDocument(name)
 
                     # Create layout for each document cell
                     documentGrid = QVBoxLayout(documentGridWidget)
                     documentGrid.setContentsMargins(10, 10, 10, 10)
-                    documentGrid.setSpacing(5)
+                    documentGrid.setSpacing(10)  # Increased spacing
 
-                    # Load the document icon
-                    docIconPath = "./images/docIcon.png"
+                    # Load the appropriate icon
                     docIconLabel = QLabel(documentGridWidget)
-                    docIconPixmap = QPixmap(docIconPath).scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+                    # Check if the icon exists, if not use a default
+                    if not os.path.exists(iconPath):
+                        # Use a fallback icon if the audio icon doesn't exist
+                        iconPath = "./images/docIcon.png"
+
+                    docIconPixmap = QPixmap(iconPath).scaled(70, 70, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                     docIconLabel.setPixmap(docIconPixmap)
                     docIconLabel.setAlignment(Qt.AlignCenter)
                     docIconLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-                    # Spacer to center the icon properly
-                    topSpacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
-                    bottomSpacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
+                    # Create text label with explicit text elision control
+                    fileNameLabel = QLabel(documentGridWidget)
 
-                    # Add elements to center the icon properly
-                    documentGrid.addItem(topSpacer)
-                    documentGrid.addWidget(docIconLabel, alignment=Qt.AlignCenter)
-                    documentGrid.addItem(bottomSpacer)
+                    # If filename is too long (>15 chars), wrap it to multiple lines
+                    displayText = fileName
+                    if len(fileName) > 20:
+                        # Insert line breaks at appropriate points
+                        words = fileName.split('_')
+                        if len(words) > 1:
+                            # If filename contains underscores, break at underscores
+                            displayText = '\n'.join(words)
+                        else:
+                            # Otherwise, break at reasonable points
+                            displayText = fileName[:15] + '\n' + fileName[15:]
 
-                    # Filename label setup
-                    fileNameLabel = QLabel(fileName)
+                    fileNameLabel.setText(displayText)
                     fileNameLabel.setAlignment(Qt.AlignCenter)
-                    fileNameLabel.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
                     fileNameLabel.setWordWrap(True)
+                    fileNameLabel.setMinimumHeight(80)  # Ensure enough space for multiple lines
                     fileNameLabel.setStyleSheet("""
                         font-size: 14px; 
                         font-weight: bold;
@@ -495,8 +612,11 @@ class MainPage(QWidget):
                         padding: 5px;
                     """)
 
-                    # Add filename label below the icon
+                    # Add elements to layout
+                    documentGrid.addWidget(docIconLabel, alignment=Qt.AlignCenter)
                     documentGrid.addWidget(fileNameLabel, alignment=Qt.AlignCenter)
+                    documentGrid.setStretch(0, 1)  # Icon gets less space
+                    documentGrid.setStretch(1, 2)  # Text gets more space
 
                     # Add widget to the grid layout
                     self.documentsLayout.addWidget(documentGridWidget, row, col)
@@ -506,12 +626,54 @@ class MainPage(QWidget):
 
                     fileAmt -= 1
                 else:
-                    break  
+                    break
             row += 1
 
-        # Force a UI refresh to ensure equal sizing
+        # Set more spacing between grid cells
+        self.documentsLayout.setHorizontalSpacing(20)
+        self.documentsLayout.setVerticalSpacing(20)
+
+        # Force a UI refresh
         self.documentsLayout.update()
         self.updateGeometry()
+
+    def openAudioFile(self, fileName, directory):
+        """Opens an audio file using the system's default audio player"""
+        import os
+        import subprocess
+        import platform
+
+        # Get the full path to the audio file
+        filePath = os.path.join(directory, fileName)
+
+        # Check if the file exists
+        if not os.path.exists(filePath):
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setText(f"File not found: {filePath}")
+            msg.setWindowTitle("File Not Found")
+            msg.exec_()
+            return
+
+        # Open the audio file with the system's default program
+        try:
+            system = platform.system()
+
+            if system == "Windows":
+                os.startfile(filePath)
+            elif system == "Darwin":  # macOS
+                subprocess.call(["open", filePath])
+            else:  # Linux and variants
+                subprocess.call(["xdg-open", filePath])
+
+            print(f"Opening audio file: {filePath}")
+        except Exception as e:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setText(f"Error opening file: {str(e)}")
+            msg.setWindowTitle("Error")
+            msg.exec_()
+
 
 # ------------------- Record Audio Thread ------------------- #
 class RecorderThread(QThread):
@@ -784,7 +946,6 @@ class RecordAudioPage(QWidget):
 
     # this method will create the transcript and display a popup
     def handleRecordingFinished(self, recordedFile):
-
         # disconnecting the signal
         try:
             self.recorderThread.recordingFinished.disconnect(self.handleRecordingFinished)
@@ -792,13 +953,13 @@ class RecordAudioPage(QWidget):
         except Exception as e:
             print("Signals already disconnected or error during disconnect:", e)
 
+        # Pass the full path to the transcription function
         filepath = speakerDiarization.transcribeAndDiarize(self.dropdown.currentIndex(), recordedFile)
 
-        speakerDiarization.deleteAudioFile(recordedFile)
         # have a pop up saying transcript created in {folder}
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
-        msg.setText(f"Transcript Successfully Created at filepath:{filepath}!")
+        msg.setText(f"Transcript Successfully Created at filepath:{filepath}!\nRecording saved at: {recordedFile}")
         msg.setWindowTitle("Recording Finished")
         msg.exec_()
 
@@ -857,7 +1018,7 @@ class SummarizationPage(QWidget):
         palette.setColor(QPalette.Window, QColor('#DFDFDF'))
         self.setPalette(palette)
         self.setAutoFillBackground(True)
-        
+
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(40)
         shadow.setXOffset(10)
@@ -929,27 +1090,33 @@ class SummarizationPage(QWidget):
         self.drawDropDown()
 
         # adding the components to the mainLayout
-        mainLayout.addWidget(navBarWidget) 
-        
+        mainLayout.addWidget(navBarWidget)
+
         # Add spacing between navbar and drop box
         mainLayout.addSpacing(15)
-        
+
         mainLayout.addWidget(self.dropBox)
 
         # Add spacing between drop box and drop down
         mainLayout.addSpacing(15)
 
         mainLayout.addWidget(self.dropdown)
-        
-        # Add a bit of spacing before the button
+
+        # Add a bit of spacing before the buttons
         mainLayout.addSpacing(10)
-        
-        mainLayout.addWidget(self.summarizeButton)
-        
+
+        # Create a horizontal layout for the buttons
+        buttonLayout = QHBoxLayout()
+        buttonLayout.addWidget(self.browseButton)
+        buttonLayout.addWidget(self.summarizeButton)
+
+        # Add button layout to main layout
+        mainLayout.addLayout(buttonLayout)
+
         # aligning the widgets
         mainLayout.setAlignment(self.dropBox, Qt.AlignCenter)
         mainLayout.setAlignment(self.dropdown, Qt.AlignCenter)
-        mainLayout.setAlignment(self.summarizeButton, Qt.AlignCenter)
+        buttonLayout.setAlignment(Qt.AlignCenter)
 
         # setting the layout to the window
         self.setLayout(mainLayout)
@@ -1009,7 +1176,7 @@ class SummarizationPage(QWidget):
             self.dropBox.setText("Drop File Here")
         else:
             # creating a label where the user can drag and drop files to summarize
-            self.setAcceptDrops(True) # allows drags and drops
+            self.setAcceptDrops(True)  # allows drags and drops
             self.dropBox = QLabel("Drop File Here", self)
             self.dropBox.setWordWrap(True)
             self.dropBox.setStyleSheet("border: 3px dashed #000000; font-size: 20px;")
@@ -1035,6 +1202,43 @@ class SummarizationPage(QWidget):
             self.summarizeButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
             self.summarizeButton.setGraphicsEffect(shadow)
             self.summarizeButton.clicked.connect(lambda: self.summarize(self.dropBox.text()))
+
+            # Creating a "Browse Files" button
+            self.browseButton = QPushButton(text="Browse Files", parent=self)
+            self.browseButton.setStyleSheet("""
+                QPushButton {
+                    background-color: #E9E9E9; 
+                    font-size: 15px; 
+                    color: #000000; 
+                    padding: 10px;
+                    border-radius: 8px;
+                }
+                QPushButton:hover {
+                    background-color: #D6D6D6;
+                }
+            """)
+            self.browseButton.setFixedWidth(150)
+            self.browseButton.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+            self.browseButton.setGraphicsEffect(shadow)
+            self.browseButton.clicked.connect(self.browseFiles)
+
+    # Add this new method for file browsing functionality
+    def browseFiles(self):
+        options = QFileDialog.Options()
+        filePath, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select File to Summarize",
+            "",
+            "All Files (*);;Text Files (*.txt);;Word Documents (*.docx);;PDF Files (*.pdf)",
+            options=options
+        )
+
+        if filePath:
+            # Extract just the filename from the path
+            fileName = filePath.split('/')[-1]
+            # Update the drop box text with the selected file
+            self.dropBox.setText(filePath)
+
 
 # this contains the GUI for opening up a document
 class DocumentPage(QWidget):

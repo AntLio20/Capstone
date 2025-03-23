@@ -73,6 +73,8 @@ pip install tiktoken
 pip install docx2txt
 pip install numpy
 pip install scikit-learn
+pip install transformers
+pip install bitsandbytes
 ```
 
 Clone and go to the repository 

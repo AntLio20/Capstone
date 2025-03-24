@@ -361,8 +361,18 @@ def generate_fallback_minutes(dialogue, attendees, date_time):
 
     return minutes
 
-def process_transcript(transcript_path, output_dir="MeetingNotes"):
-    """Process transcript and generate clean meeting minutes"""
+
+def process_transcript(transcript_path, meetingNotesList=None):
+    """Process transcript and generate clean meeting minutes
+
+    Args:
+        transcript_path: Path to the transcript file
+        meetingNotesList: Optional list to populate with section content for consistency with other models
+
+    Returns:
+        If meetingNotesList is provided, populates it with section content and returns None
+        Otherwise, returns the output file path
+    """
     # Initialize progress tracker
     progress_tracker = ProgressTracker(total_steps=5)
     progress_tracker.update_step("Initializing model and tokenizer")
@@ -428,9 +438,50 @@ def process_transcript(transcript_path, output_dir="MeetingNotes"):
         # Create basic minutes as fallback
         minutes = generate_fallback_minutes(filtered_dialogue, attendees, date_time)
 
-    # Save output
+    # If meetingNotesList is provided, populate it with the content for consistency with other models
+    if meetingNotesList is not None:
+        # Extract each section from the minutes
+        opening_info = extract_section(minutes, "Date and Time")
+        present_members = extract_section(minutes, "Attendees")
+        # Empty for absent members as DeepSeek R1 model doesn't specify this
+        absent_members = "No specific absent members listed"
+        # Empty for agenda approval as DeepSeek R1 model doesn't specify this
+        agenda_approval = "No specific agenda approval information"
+        # Empty for previous meeting as DeepSeek R1 model doesn't specify this
+        prev_meeting_approval = "No information about previous meeting approval"
+        prev_meeting_summary = "No summary of previous meeting provided"
+
+        # Get the main content sections
+        summary = extract_section(minutes, "Key Discussion Topics") + "\n\n" + \
+                  extract_section(minutes, "Decisions Made") + "\n\n" + \
+                  extract_section(minutes, "Action Items")
+
+        # Get adjournment (or use next steps as a proxy)
+        adjournment = extract_section(minutes, "Next Steps")
+
+        # Clear the list first if it has existing content
+        meetingNotesList.clear()
+
+        # Populate in the expected order
+        meetingNotesList.extend([
+            opening_info,
+            present_members,
+            absent_members,
+            agenda_approval,
+            prev_meeting_approval,
+            prev_meeting_summary,
+            summary,
+            adjournment
+        ])
+
+        # No need to save the file - that will be handled by the calling function
+        progress_tracker.complete()
+        return None
+
+    # If not populating a list, save output file as before
     progress_tracker.update_step("Saving document")
     try:
+        output_dir = "MeetingNotes"
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, os.path.basename(transcript_path).split('.')[0] + "_minutes.docx")
         save_as_docx(minutes, output_path)
@@ -441,6 +492,16 @@ def process_transcript(transcript_path, output_dir="MeetingNotes"):
 
     progress_tracker.complete()
     return output_path
+
+
+def extract_section(minutes, section_name):
+    """Extract content from a specific section of the minutes"""
+    section_pattern = f"## {section_name}\\n(.*?)(?=## |$)"
+    match = re.search(section_pattern, minutes, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return "No information available"
+
 
 def parse_dialogue(text):
     """Improved dialogue parser with timestamp handling"""

@@ -1156,8 +1156,8 @@ class SummarizationPage(QWidget):
     # this function is used to draw a drop down bar
     def drawDropDown(self):
         self.dropdown = QComboBox()
-        self.dropdown.addItems(["DeepSeek R1", "DeepSeek API", "OpenAI API"])  
-        self.dropdown.setFixedWidth(self.width() // 4)
+        self.dropdown.addItems(["DeepSeek 1.5B Local (slower/less accurate/free)", "DeepSeek API (faster/more accurate/cheap)", "OpenAI API (fastest/best/expensive)"])
+        self.dropdown.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.dropdown.setStyleSheet("""
             QComboBox {
                 background-color: #F5F5F5;

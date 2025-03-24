@@ -9,8 +9,9 @@ from datetime import datetime
 currentTime = datetime.now()
 dt_string = currentTime.strftime("%B %d, %Y %H:%M:%S")
 meetingNotesList = []
+# Updated section headings to include Actionable Items
 sectionHeadings = ["Opening", "Present", "Absent", "Agenda Approval", "Previous Meeting Approval",
-                   "Previous Meeting Summary", "Summary of Meeting", "Adjournment"]
+                   "Previous Meeting Summary", "Summary of Meeting", "Actionable Items", "Adjournment"]
 
 
 # function converts the transcript into chunks where it would be stored into an array
@@ -89,7 +90,8 @@ def gptSummarization(filepath):
                         "5. Previous meeting minutes approval\n"
                         "6. Summary of last meeting notes and decisions\n"
                         "7. Detailed summary and key points of the topic of the current meeting\n"
-                        "8. Adjournment time, bascially the end time\n"
+                        "8. Action items and assigned responsibilities (extract from the meeting summary all tasks that were assigned to specific people or deadlines that were set)\n"
+                        "9. Adjournment time, basically the end time\n"
                         "only reply with the answer to each section with the '☺' in between each section\n"
                         f"(Processing chunk #{chunkCounter}): {chunk}"
                     )
@@ -168,7 +170,8 @@ def deepseekAPI(filepath):
                         "5. Previous meeting minutes approval\n"
                         "6. Summary of last meeting notes and decisions\n"
                         "7. Detailed summary and key points of the topic of the current meeting\n"
-                        "8. Adjournment time, bascially the end time\n"
+                        "8. Action items and assigned responsibilities (extract from the meeting summary all tasks that were assigned to specific people or deadlines that were set)\n"
+                        "9. Adjournment time, basically the end time\n"
                         "Only use the information provided in the transcript"
                     )
                 }

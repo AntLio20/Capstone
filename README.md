@@ -34,6 +34,8 @@ Libraries:
 - openai
 - tiktoken
 - docx2txt
+- transformers
+- bitsandbytes
 
 # Usage
 

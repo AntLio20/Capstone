@@ -1842,6 +1842,9 @@ class MainWindow(QMainWindow):
         # setting up the default size of the browser
         self.setMinimumSize(900, 600)
 
+        # Set the window title
+        self.setWindowTitle("Personalized Automated Minutes-Taker - PAM")
+
 # config setup for Qapplication
 app = QApplication(sys.argv)
 

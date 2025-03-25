@@ -17,6 +17,27 @@ class FileSystem:
         self.sectionHeadings = ["Opening", "Present", "Absent", "Agenda Approval", "Previous Meeting Approval",
                    "Previous Meeting Summary", "Summary of Meeting", "Adjournment"]
 
+    def searchTranscriptDirectory(self):
+        """Searches the MeetingTranscripts directory for transcript files"""
+        import os
+
+        self.transcriptDirectory = "MeetingTranscripts"
+        self.transcriptFileNames = []
+
+        # Create directory if it doesn't exist
+        if not os.path.exists(self.transcriptDirectory):
+            os.makedirs(self.transcriptDirectory)
+            return
+
+        # Get all text files in the directory (.txt, .md, etc.)
+        for file in os.listdir(self.transcriptDirectory):
+            if file.endswith((".txt", ".md", ".docx")):
+                self.transcriptFileNames.append(file)
+
+        # Sort files by creation date (newest first)
+        self.transcriptFileNames.sort(key=lambda x: os.path.getctime(os.path.join(self.transcriptDirectory, x)),
+                                      reverse=True)
+
     # this method searches for the amount of files wihtin the directory while populating a list with thier names
     def searchDirectory(self):
 
@@ -32,6 +53,21 @@ class FileSystem:
 
                 self.fileNames.append(f)
                 self.fileAmt = self.fileAmt + 1
+
+    def getTranscriptSize(self, fileName):
+        """Gets the size of a transcript file"""
+        import os
+
+        filePath = os.path.join(self.transcriptDirectory, fileName)
+        sizeInBytes = os.path.getsize(filePath)
+
+        # Format size based on magnitude
+        if sizeInBytes < 1024:
+            return f"{sizeInBytes} bytes"
+        elif sizeInBytes < (1024 * 1024):
+            return f"{sizeInBytes / 1024:.2f} KB"
+        else:
+            return f"{sizeInBytes / (1024 * 1024):.2f} MB"
 
     # this method returns the file size
     def getSize(self, fileName):

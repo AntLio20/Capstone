@@ -41,7 +41,7 @@ def transcribeAndDiarize(modelType, file):
 
     # File save path
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filepath = os.path.join("./diarizedTranscripts", f"{timestamp}-transcript.docx")
+    filepath = os.path.join("./MeetingTranscripts", f"{timestamp}-transcript.docx")
 
     totalStartTime = time.time()
 

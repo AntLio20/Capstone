@@ -255,7 +255,7 @@ class MainPage(QWidget):
 
         self.stack = stack
         self.fileSystem = FileSystem()  # initializing the FileSystem
-        self.showingRecordings = False  # Track which view we're showing
+        self.currentView = "minutes"  # Track which view we're showing: "minutes", "transcripts", or "recordings"
 
         # setting the background color
         palette = self.palette()
@@ -395,10 +395,10 @@ class MainPage(QWidget):
         self.setLayout(mainLayout)
 
         # Update the grid layout for documents
-        self.updateDocuments(show_recordings=False)
+        self.updateDocuments(view_type="minutes")
 
     def createToggleView(self):
-        """Creates a toggle control to switch between transcripts and recordings view"""
+        """Creates a toggle control to switch between transcripts, recordings, and minutes view"""
         # Create a container for the toggle
         toggleContainer = QWidget()
         toggleContainer.setStyleSheet("""
@@ -423,11 +423,8 @@ class MainPage(QWidget):
         # Create a button group for mutual exclusion
         self.viewButtonGroup = QButtonGroup(self)
 
-        # Create radio buttons for toggle options
-        self.transcriptsRadio = QPushButton("Transcripts")
-        self.transcriptsRadio.setCheckable(True)
-        self.transcriptsRadio.setChecked(True)  # Default to transcripts view
-        self.transcriptsRadio.setStyleSheet("""
+        # Create buttons for toggle options with consistent styling
+        buttonStyle = """
             QPushButton {
                 background-color: #E9E9E9;
                 border-radius: 8px;
@@ -441,31 +438,28 @@ class MainPage(QWidget):
             QPushButton:hover {
                 background-color: #D6D6D6;
             }
-        """)
+        """
+
+        self.minutesRadio = QPushButton("Minutes")
+        self.minutesRadio.setCheckable(True)
+        self.minutesRadio.setChecked(True)  # Default to minutes view
+        self.minutesRadio.setStyleSheet(buttonStyle)
+
+        self.transcriptsRadio = QPushButton("Transcripts")
+        self.transcriptsRadio.setCheckable(True)
+        self.transcriptsRadio.setStyleSheet(buttonStyle)
 
         self.recordingsRadio = QPushButton("Recordings")
         self.recordingsRadio.setCheckable(True)
-        self.recordingsRadio.setStyleSheet("""
-            QPushButton {
-                background-color: #E9E9E9;
-                border-radius: 8px;
-                padding: 8px 15px;
-                font-size: 14px;
-            }
-            QPushButton:checked {
-                background-color: #4682B4;
-                color: white;
-            }
-            QPushButton:hover {
-                background-color: #D6D6D6;
-            }
-        """)
+        self.recordingsRadio.setStyleSheet(buttonStyle)
 
         # Add buttons to the button group
+        self.viewButtonGroup.addButton(self.minutesRadio)
         self.viewButtonGroup.addButton(self.transcriptsRadio)
         self.viewButtonGroup.addButton(self.recordingsRadio)
 
         # Add buttons to layout
+        toggleLayout.addWidget(self.minutesRadio)
         toggleLayout.addWidget(self.transcriptsRadio)
         toggleLayout.addWidget(self.recordingsRadio)
 
@@ -473,10 +467,12 @@ class MainPage(QWidget):
         toggleLayout.addStretch(1)
 
         # Connect toggle buttons to update view
-        self.transcriptsRadio.clicked.connect(lambda: self.updateDocuments(show_recordings=False))
-        self.recordingsRadio.clicked.connect(lambda: self.updateDocuments(show_recordings=True))
+        self.minutesRadio.clicked.connect(lambda: self.updateDocuments(view_type="minutes"))
+        self.transcriptsRadio.clicked.connect(lambda: self.updateDocuments(view_type="transcripts"))
+        self.recordingsRadio.clicked.connect(lambda: self.updateDocuments(view_type="recordings"))
 
         return toggleContainer
+
 
     # go to summarize page
     def navigateSummarize(self):
@@ -498,13 +494,13 @@ class MainPage(QWidget):
         self.stack.addWidget(self.docPage)
         self.stack.setCurrentWidget(self.docPage)
 
-    def updateDocuments(self, show_recordings=None):
+    def updateDocuments(self, view_type=None):
         """Update the documents grid based on the selected view type"""
-        # If show_recordings is None, use current state
-        if show_recordings is None:
-            show_recordings = self.showingRecordings
+        # If view_type is None, use current state
+        if view_type is None:
+            view_type = self.currentView
         else:
-            self.showingRecordings = show_recordings
+            self.currentView = view_type
 
         # Clear existing widgets from the grid first to avoid duplicates
         for i in reversed(range(self.documentsLayout.count())):
@@ -513,13 +509,19 @@ class MainPage(QWidget):
                 widget.deleteLater()
 
         # Retrieve files based on the view type
-        if show_recordings:
+        if view_type == "recordings":
             self.fileSystem.searchAudioDirectory()
             fileNames = self.fileSystem.audioFileNames
             iconPath = "./images/audioIcon.png"  # You need to create/add this icon
             directory = self.fileSystem.audioDirectory
             getSize = self.fileSystem.getAudioSize
-        else:
+        elif view_type == "transcripts":
+            self.fileSystem.searchTranscriptDirectory()
+            fileNames = self.fileSystem.transcriptFileNames
+            iconPath = "./images/docIcon.png"  # Reuse document icon or create a specific transcript icon
+            directory = self.fileSystem.transcriptDirectory
+            getSize = self.fileSystem.getTranscriptSize
+        else:  # "minutes" is the default
             self.fileSystem.searchDirectory()
             fileNames = self.fileSystem.fileNames
             iconPath = "./images/docIcon.png"
@@ -562,8 +564,11 @@ class MainPage(QWidget):
 
                     # Apply click event for the entire grey box
                     documentGridWidget.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-                    if show_recordings:
+                    if view_type == "recordings":
                         documentGridWidget.mousePressEvent = lambda event, name=fileName, dir=directory: self.openAudioFile(name, dir)
+                    elif view_type == "transcripts":
+                        # For transcripts, we pass the fileName
+                        documentGridWidget.mousePressEvent = lambda event, name=fileName: self.navigateTranscript(name)
                     else:
                         documentGridWidget.mousePressEvent = lambda event, name=fileName: self.navigateDocument(name)
 
@@ -577,7 +582,7 @@ class MainPage(QWidget):
 
                     # Check if the icon exists, if not use a default
                     if not os.path.exists(iconPath):
-                        # Use a fallback icon if the audio icon doesn't exist
+                        # Use a fallback icon if the icon doesn't exist
                         iconPath = "./images/docIcon.png"
 
                     docIconPixmap = QPixmap(iconPath).scaled(70, 70, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -636,6 +641,15 @@ class MainPage(QWidget):
         # Force a UI refresh
         self.documentsLayout.update()
         self.updateGeometry()
+
+    def navigateTranscript(self, fileName):
+        """Navigate to a transcript file using the specialized TranscriptPage"""
+        # Create a TranscriptPage instead of a DocumentPage
+        self.transcriptPage = TranscriptPage(self.stack, fileName)
+
+        # Add the page to the stack and switch to it
+        self.stack.addWidget(self.transcriptPage)
+        self.stack.setCurrentWidget(self.transcriptPage)
 
     def openAudioFile(self, fileName, directory):
         """Opens an audio file using the system's default audio player"""
@@ -1598,6 +1612,206 @@ class DocumentPage(QWidget):
     # this function navigates back to the main page
     def navigateHome(self):
         self.stack.setCurrentIndex(1)
+
+
+# this contains the GUI for opening up a transcript
+class TranscriptPage(DocumentPage):
+    def __init__(self, stack, fileName=None):
+        # Call the parent class constructor
+        super().__init__(stack, fileName)
+
+        # Override the fileSystem with a new one pointing to the transcript directory
+        self.fileSystem = FileSystem()
+        self.fileSystem.fileDirectory = "MeetingTranscripts"
+
+        # Update the file size display to use the transcript size method
+        try:
+            # Update the file size label
+            for i in range(self.layout().count()):
+                widget = self.layout().itemAt(i).widget()
+                if isinstance(widget, QWidget) and widget.styleSheet().find("background-color: #D1D6D7") != -1:
+                    for j in range(widget.layout().count()):
+                        childWidget = widget.layout().itemAt(j).widget()
+                        if isinstance(childWidget, QLabel) and childWidget.text().startswith("Size:"):
+                            fileSize = self.fileSystem.getTranscriptSize(fileName)
+                            childWidget.setText(f"Size: {fileSize}")
+                            break
+                    break
+        except Exception as e:
+            print(f"Error updating transcript file size: {str(e)}")
+
+        # Reload the document with the correct path
+        self.reloadDocument()
+
+    def reloadDocument(self):
+        """Reload the document with the correct file path"""
+        # Clear the existing content
+        contentWidget = None
+        scrollArea = None
+
+        # Find the scroll area and content widget
+        for i in range(self.layout().count()):
+            widget = self.layout().itemAt(i).widget()
+            if isinstance(widget, QScrollArea):
+                scrollArea = widget
+                contentWidget = widget.widget()
+                break
+
+        if not contentWidget or not scrollArea:
+            return
+
+        # Clear the existing layout
+        while contentWidget.layout().count():
+            item = contentWidget.layout().takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        # Reload the document
+        documentLayout = contentWidget.layout()
+
+        try:
+            # Get the full path to the document
+            fullPath = os.path.join(self.fileSystem.fileDirectory, self.fileName)
+
+            # Check if file exists
+            if not os.path.exists(fullPath):
+                errorLabel = QLabel(f"Error: File not found at {fullPath}")
+                errorLabel.setAlignment(Qt.AlignCenter)
+                documentLayout.addWidget(errorLabel)
+            else:
+                # Load the document using python-docx
+                doc = Document(fullPath)
+
+                # Add a horizontal line at the top of the document content
+                line = QFrame()
+                line.setFrameShape(QFrame.HLine)
+                line.setFrameShadow(QFrame.Sunken)
+                line.setStyleSheet("border: 1px solid #cccccc;")
+                documentLayout.addWidget(line)
+
+                # Add some spacing after the line
+                documentLayout.addSpacing(10)
+
+                # Process paragraphs
+                for para in doc.paragraphs:
+                    if not para.text.strip():  # Skip empty paragraphs
+                        continue
+
+                    # Create paragraph label
+                    paraLabel = QLabel()
+
+                    # Apply paragraph style
+                    if para.style.name.startswith('Heading'):
+                        # Get heading level (1-9)
+                        try:
+                            level = int(para.style.name[-1])
+                            if 1 <= level <= 6:
+                                fontSize = 22 - (level * 2)  # Size decreases with level
+                                fontWeight = QFont.Bold
+                            else:
+                                fontSize = 12
+                                fontWeight = QFont.Normal
+                        except:
+                            fontSize = 16
+                            fontWeight = QFont.Bold
+
+                        headingFont = QFont("Times New Roman", fontSize, fontWeight)
+                        paraLabel.setFont(headingFont)
+
+                        # Add some spacing before headings
+                        documentLayout.addSpacing(10)
+                    else:
+                        # Regular paragraph
+                        paraFont = QFont("Times New Roman", 12)
+                        paraLabel.setFont(paraFont)
+
+                    # Set paragraph text with basic formatting
+                    formatted_text = ""
+                    for run in para.runs:
+                        text = run.text
+
+                        # Apply formatting
+                        if run.bold:
+                            text = f"<strong>{text}</strong>"
+                        if run.italic:
+                            text = f"<em>{text}</em>"
+                        if run.underline:
+                            text = f"<u>{text}</u>"
+
+                        formatted_text += text
+
+                    paraLabel.setText(formatted_text)
+                    paraLabel.setTextFormat(Qt.RichText)
+                    paraLabel.setWordWrap(True)
+                    documentLayout.addWidget(paraLabel)
+
+                # Process tables
+                for table in doc.tables:
+                    # Create a frame for the table
+                    tableFrame = QFrame()
+                    tableFrame.setFrameShape(QFrame.Box)
+                    tableFrame.setStyleSheet("border: 1px solid #CCCCCC; background-color: #F9F9F9;")
+
+                    # Create grid layout for table
+                    tableLayout = QGridLayout(tableFrame)
+                    tableLayout.setSpacing(2)
+
+                    # Add table cells
+                    for i, row in enumerate(table.rows):
+                        for j, cell in enumerate(row.cells):
+                            # Create cell content
+                            cellLabel = QLabel()
+
+                            # Format cell content
+                            cell_text = ""
+                            for para in cell.paragraphs:
+                                if cell_text:
+                                    cell_text += "<br>"
+
+                                for run in para.runs:
+                                    text = run.text
+                                    if run.bold:
+                                        text = f"<strong>{text}</strong>"
+                                    if run.italic:
+                                        text = f"<em>{text}</em>"
+                                    if run.underline:
+                                        text = f"<u>{text}</u>"
+
+                                    cell_text += text
+
+                            cellLabel.setText(cell_text)
+                            cellLabel.setTextFormat(Qt.RichText)
+                            cellLabel.setWordWrap(True)
+                            cellLabel.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+
+                            # Style header row differently
+                            if i == 0:
+                                cellLabel.setStyleSheet("font-weight: bold; background-color: #E6E6E6; padding: 5px;")
+                            else:
+                                cellLabel.setStyleSheet("padding: 5px;")
+
+                            tableLayout.addWidget(cellLabel, i, j)
+
+                    # Add the table to the document layout
+                    documentLayout.addWidget(tableFrame)
+
+                # Add images from the document
+                self.add_document_images(doc, documentLayout)
+
+                # Add spacing at the end
+                documentLayout.addSpacing(20)
+
+        except Exception as e:
+            print(f"Error displaying transcript: {str(e)}")
+            errorLabel = QLabel(f"Error displaying transcript: {str(e)}")
+            errorLabel.setFont(QFont("Times New Roman", 12))
+            errorLabel.setAlignment(Qt.AlignCenter)
+            errorLabel.setWordWrap(True)
+            documentLayout.addWidget(errorLabel)
+
+        # Add stretch to push everything to the top
+        documentLayout.addStretch()
 
 
 # this class manages the stacked pages

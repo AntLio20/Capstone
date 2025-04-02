@@ -362,7 +362,7 @@ def generate_fallback_minutes(dialogue, attendees, date_time):
     return minutes
 
 
-def process_transcript(transcript_path, meetingNotesList=None):
+def process_transcript(transcript_path, model_name, meetingNotesList=None):
     """Process transcript and generate clean meeting minutes
 
     Args:
@@ -387,8 +387,8 @@ def process_transcript(transcript_path, meetingNotesList=None):
     torch.backends.cudnn.benchmark = False
 
     # Load model and tokenizer
-    model_name = "DeepSeek-R1-Distill-Qwen-1.5B"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    modelName = model_name
+    tokenizer = AutoTokenizer.from_pretrained(modelName)
 
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token

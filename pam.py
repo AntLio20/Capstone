@@ -13,7 +13,6 @@ import sys
 import re
 from docx import Document
 
-
 # this function will run the summarization of our program
 def summarize(filepath, model):
     try:
@@ -40,7 +39,9 @@ def summarize(filepath, model):
         # DeepSeek R1 model for summarization (local model)
         if model == 0:
             # Use the local DeepSeek R1 model from pam_deepseek.py
-            pam_deepseek.process_transcript(filepath, gpt.meetingNotesList)
+
+            model_name = "DeepSeek-R1-Distill-Qwen-1.5B"
+            pam_deepseek.process_transcript(filepath, model_name, gpt.meetingNotesList)
 
         # DeepSeek API model for summarization
         elif model == 1:
@@ -61,6 +62,9 @@ def summarize(filepath, model):
                 # Pad with empty sections if needed
                 while len(gpt.meetingNotesList) < 8:
                     gpt.meetingNotesList.append("No information provided")
+        if model == 3:
+            model_name = "trained_deepseek_r1_8b"
+            pam_deepseek.process_transcript(filepath, modelname, gpt.meetingNotesList)
 
         # Create file name for minutes document
         basename = os.path.basename(filepath)

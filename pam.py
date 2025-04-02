@@ -63,8 +63,8 @@ def summarize(filepath, model):
                 while len(gpt.meetingNotesList) < 8:
                     gpt.meetingNotesList.append("No information provided")
         if model == 3:
-            model_name = "trained_deepseek_r1_8b"
-            pam_deepseek.process_transcript(filepath, modelname, gpt.meetingNotesList)
+            model_name = "DeepSeek-R1-Distill-Llama-8B"
+            pam_deepseek.process_transcript(filepath, model_name, gpt.meetingNotesList)
 
         # Create file name for minutes document
         basename = os.path.basename(filepath)

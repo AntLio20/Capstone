@@ -29,7 +29,7 @@ class ProgressTracker:
         overall_progress = min(100, (self.current_step - 1 + step_progress / 100) / self.total_steps * 100)
 
         print(
-            f"[{overall_progress:.1f}%] Step {self.current_step}/{self.total_steps}: {step_name} | Time elapsed: {elapsed:.1f}s")
+            f"[{overall_progress:.1f}%] Step {self.current_step}/{self.total_steps+1}: {step_name} | Time elapsed: {elapsed:.1f}s")
 
     def update_progress(self, progress, items_processed=None, total_items=None):
         """Update progress within the current step"""

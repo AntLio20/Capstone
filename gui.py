@@ -7,7 +7,9 @@
 # pip install python-docx       # For working with docx files
 # pip install Pillow            # For image handling
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout, QSizePolicy, QGraphicsDropShadowEffect, QGridLayout, QFrame, QScrollArea, QComboBox, QSpacerItem
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QStackedWidget, QPushButton, QVBoxLayout, QLineEdit, \
+    QLabel, QHBoxLayout, QSizePolicy, QGraphicsDropShadowEffect, QGridLayout, QFrame, QScrollArea, QComboBox, \
+    QSpacerItem
 from PyQt5.QtGui import QPalette, QColor, QFont, QPixmap, QCursor
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QButtonGroup
@@ -22,11 +24,11 @@ from docx import Document
 import os
 import io
 from PIL import Image, ImageQt
+import progress_bar_integration
 
 # connecting to openai
 openai.api_key = os.getenv(
     "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")
-
 
 # setting up global values
 documentFont = QFont("Times New Roman", 12)  # Default font and font size
@@ -38,7 +40,8 @@ shadow.setXOffset(10)
 shadow.setYOffset(10)
 shadow.setColor(QColor(0, 0, 0, 100))
 
- # -------------------------------------- LOGIN PAGE ----------------------------------------- #
+
+# -------------------------------------- LOGIN PAGE ----------------------------------------- #
 
 # this gui allows users to interact and login to their accounts
 class LoginWindow(QWidget):
@@ -245,6 +248,7 @@ class LoginWindow(QWidget):
     def login(self):
         """For backward compatibility with existing code"""
         self.handle_auth()
+
 
 # -------------------------------------- MAIN PAGE ----------------------------------------- #
 
@@ -473,11 +477,10 @@ class MainPage(QWidget):
 
         return toggleContainer
 
-
     # go to summarize page
     def navigateSummarize(self):
         sumPage = self.stack.widget(2)
-        sumPage.resetFileInput() # rest the summarization page
+        sumPage.resetFileInput()  # rest the summarization page
         self.stack.setCurrentIndex(2)
 
     # go to record audio page
@@ -489,7 +492,7 @@ class MainPage(QWidget):
     def navigateDocument(self, fileName):
         # Send the file name to the DocumentPage
         self.docPage = DocumentPage(self.stack, fileName)
-        
+
         # Adding the DocumentPage to the stack and switching to it
         self.stack.addWidget(self.docPage)
         self.stack.setCurrentWidget(self.docPage)
@@ -550,7 +553,7 @@ class MainPage(QWidget):
                     # Grey box (container for the file button)
                     documentGridWidget = QWidget()
                     documentGridWidget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
-                    documentGridWidget.setMinimumWidth(150)
+                    documentGridWidget.setMinimumWidth( 150)
                     documentGridWidget.setMaximumWidth(300)
                     documentGridWidget.setMinimumHeight(200)  # Increased height
                     documentGridWidget.setStyleSheet("""
@@ -694,13 +697,13 @@ class RecorderThread(QThread):
     # Defining the signals that will be used to send messages to and from the thread
     recordingFinished = pyqtSignal(str)
     stopRecording = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         # Connecting the stopRecording signal to the stopRecording method
         self.stopRecording.connect(self.stopRecordingMethod)
-        
-    def run(self):
 
+    def run(self):
         # Recording the audio
         filename = Recorder.recordAudio()
 
@@ -710,7 +713,8 @@ class RecorderThread(QThread):
     def stopRecordingMethod(self):
         print("Recording stopped")
         Recorder.setStopRecording(True)
-        
+
+
 # -------------------------------------- RECORD AUDIO PAGE ----------------------------------------- #
 # this contains the GUI for the main page of our application
 class RecordAudioPage(QWidget):
@@ -724,13 +728,12 @@ class RecordAudioPage(QWidget):
             """
             # Create a QPushButton without text initially
             button = QPushButton()
-            button.setFixedSize(300, 300) 
+            button.setFixedSize(300, 300)
 
             # Tracking Button state to when there is a clicked event
             button.isRecording = False
             button.finsishedRecording = False
             self.recorderThread = None
-
 
             # Create a layout to stack icon and text
             layout = QVBoxLayout(button)
@@ -766,8 +769,8 @@ class RecordAudioPage(QWidget):
                     background-color: #E9E9E9;
                 }
             """)
-        
-        # This method will change the color of the button when it is pressed
+
+            # This method will change the color of the button when it is pressed
             def toggleColor():
                 if button.isRecording:
                     button.isRecording = False
@@ -890,11 +893,11 @@ class RecordAudioPage(QWidget):
 
         recordWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-
         # Creating a label with specified settings
         # style sheet - bold, size and color
         # static width and dynamic height for word wrapping
-        self.instructionLabel = QLabel("   When Recording, Get Each Speaker to introduce themselves with the format of 'Hi, I am <First Name> <Last Name>' to register speaker names ")
+        self.instructionLabel = QLabel(
+            "   When Recording, Get Each Speaker to introduce themselves with the format of 'Hi, I am <First Name> <Last Name>' to register speaker names ")
         self.instructionLabel.setStyleSheet("""
             font-size: 16px;
             color: black;
@@ -941,7 +944,7 @@ class RecordAudioPage(QWidget):
 
         # If the thread is finished executing, it will execute this method
         self.recorderThread.recordingFinished.connect(self.handleRecordingFinished)
-        
+
         # Connect the stopRecording signal to a method that will stop the recording
         self.recorderThread.stopRecording.connect(self.stopRecording)
 
@@ -980,7 +983,7 @@ class RecordAudioPage(QWidget):
     # this function is used to draw a drop down bar
     def drawDropDown(self):
         self.dropdown = QComboBox()
-        self.dropdown.addItems(["Medium en (Accurate)", "Base en (Moderate)", "Tiny en (Fast)"])  
+        self.dropdown.addItems(["Medium en (Accurate)", "Base en (Moderate)", "Tiny en (Fast)"])
         self.dropdown.setFixedWidth(self.width() // 2)
         self.dropdown.setStyleSheet("""
             QComboBox {
@@ -1001,7 +1004,7 @@ class RecordAudioPage(QWidget):
             self.recorderThread.stopRecording.emit()
 
             # Waiting until the thread is finished
-            Recorder.setStopRecording(True)            
+            Recorder.setStopRecording(True)
             self.recorderThread.wait()
 
         # resetting the button so that it is not red and recording is set to false
@@ -1018,6 +1021,7 @@ class RecordAudioPage(QWidget):
         """)
 
         self.stack.setCurrentIndex(1)
+
 
 # -------------------------------------- SUMMARIZATION PAGE ----------------------------------------- #
 # this contains the GUI for summarizing a note
@@ -1141,7 +1145,7 @@ class SummarizationPage(QWidget):
             event.accept()
         else:
             event.ignore()
-    
+
     # built in function for drop events
     def dragMoveEvent(self, event):
         if event.mimeData().hasUrls():
@@ -1157,10 +1161,10 @@ class SummarizationPage(QWidget):
             self.dropBox.setText(fileName.split('/')[-1])
 
     # This function will invoke the summarization component
-    def summarize(self,filename):
+    def summarize(self, filename):
         pam.summarize(filename, self.dropdown.currentIndex())
         mainPage = self.stack.widget(1)
-        mainPage.updateDocuments() # update the main page to reflect the files in the directory
+        mainPage.updateDocuments()  # update the main page to reflect the files in the directory
         self.stack.setCurrentIndex(1)
 
     # this function navigates back to the main page
@@ -1170,7 +1174,10 @@ class SummarizationPage(QWidget):
     # this function is used to draw a drop down bar
     def drawDropDown(self):
         self.dropdown = QComboBox()
-        self.dropdown.addItems(["DeepSeek 1.5B Local (slower/less accurate/free)", "DeepSeek API (faster/more accurate/cheap)", "OpenAI API (fastest/best/expensive)", "DeepSeek 8B trained Local (slowest/less accurate/free/6GB VRAM Required)"])
+        self.dropdown.addItems(
+            ["DeepSeek 1.5B Local (slower/less accurate/free)", "DeepSeek API (faster/more accurate/cheap)",
+             "OpenAI API (fastest/best/expensive)",
+             "DeepSeek 8B trained Local (slowest/less accurate/free/6GB VRAM Required)"])
         self.dropdown.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.dropdown.setStyleSheet("""
             QComboBox {
@@ -1182,12 +1189,19 @@ class SummarizationPage(QWidget):
                 padding: 5px;
             }
         """)
-        
+
     # this will reset the file input for the drop box
     def resetFileInput(self):
         # if the drop box has already been created than we reset the text
         if hasattr(self, 'dropBox'):
             self.dropBox.setText("Drop File Here")
+
+            # Reset progress bar and status label if they exist
+            if hasattr(self, 'progressBar') and hasattr(self, 'statusLabel'):
+                self.progressBar.setValue(0)
+                self.statusLabel.setText("Ready to summarize")
+                self.progressBar.setVisible(False)
+                self.statusLabel.setVisible(False)
         else:
             # creating a label where the user can drag and drop files to summarize
             self.setAcceptDrops(True)  # allows drags and drops
@@ -1822,19 +1836,19 @@ class MainWindow(QMainWindow):
 
         # The QStackedLayout will store all the different QWidgets/pages
         self.stack = QStackedWidget()
-        
+
         # storing all the pages to the stack
         self.loginPage = LoginWindow(self.stack)
         self.mainPage = MainPage(self.stack)
         self.summarizationPage = SummarizationPage(self.stack)
+        progress_bar_integration.integrate_progress_bar(self.summarizationPage)
         self.recordAudioPage = RecordAudioPage(self.stack)
 
-        # The way the pages are added to the stack determine thier index
-        self.stack.addWidget(self.loginPage) # 0
-        self.stack.addWidget(self.mainPage) # 1
-        self.stack.addWidget(self.summarizationPage) # 2
-        self.stack.addWidget(self.recordAudioPage) # 2
-
+        # The way the pages are added to the stack determine their index
+        self.stack.addWidget(self.loginPage)  # 0
+        self.stack.addWidget(self.mainPage)  # 1
+        self.stack.addWidget(self.summarizationPage)  # 2
+        self.stack.addWidget(self.recordAudioPage)  # 2
 
         # Set the stacked widget as the central widget of QMainWindow
         self.setCentralWidget(self.stack)
@@ -1844,6 +1858,7 @@ class MainWindow(QMainWindow):
 
         # Set the window title
         self.setWindowTitle("Personalized Automated Minutes-Taker - PAM")
+
 
 # config setup for Qapplication
 app = QApplication(sys.argv)

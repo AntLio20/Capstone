@@ -5,14 +5,15 @@ import docx2txt
 import torch
 import bitsandbytes
 from docx import Document
+from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-
 
 # ------------------------------------------------------------------
 # 1. Model Initialization (Load Once at Import Time)
 # ------------------------------------------------------------------
 
-MODEL_PATH = "./trained_deepseek_r1_8b"
+base_model_path = "./DeepSeek-R1-Distill-LLama-8B"
+adapter_path = "./trained_deepseek_r1_8b"
 
 # Configure 4-bit quantization
 bnb_config = BitsAndBytesConfig(
@@ -23,30 +24,33 @@ bnb_config = BitsAndBytesConfig(
 )
 
 max_memory_mapping = {
-    0: "6GiB",   # GPU 0 can use 12 GiB
-    "cpu": "30GiB"  # Up to 30 GiB system RAM for CPU offload
+    0: "6GiB",        # GPU 0 limit
+    "cpu": "30GiB"    # CPU fallback
 }
-
 
 device_map = "auto"
 
 print("Loading model...")
 
 try:
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_PATH,
+    # Load base model with quantization
+    base_model = AutoModelForCausalLM.from_pretrained(
+        base_model_path,
         quantization_config=bnb_config,
-        device_map=device_map,            # Partial offload or "auto"
-        max_memory=max_memory_mapping     # Let HF offload if GPU is short on memory
-        # If forcing full CPU: device_map={"": "cpu"}  (and remove max_memory)
+        device_map=device_map,
+        max_memory=max_memory_mapping
     )
+
+    # Load the LoRA adapter on top of base model
+    model = PeftModel.from_pretrained(base_model, adapter_path)
+
 except ValueError as e:
     print("\nERROR LOADING MODEL:", e)
     print("If you get a 'dispatched on CPU' error, try lowering the GPU memory in max_memory_mapping,")
     print("or force everything on CPU by setting device_map={'': 'cpu'}.")
     raise
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+tokenizer = AutoTokenizer.from_pretrained(base_model_path)
 model.eval()
 print("Model loaded successfully.\n")
 

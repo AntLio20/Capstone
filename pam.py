@@ -29,7 +29,7 @@ def set_progress_callback(callback_func):
     progress_callback = callback_func
 
     # Also set the progress callback for the GPT module
-    gpt.set_progress_callback(callback_func)
+    #gpt.set_progress_callback(callback_func)
 
 
 def report_progress(progress_percent, status_message):

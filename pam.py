@@ -12,6 +12,7 @@ import os
 import sys
 import re
 from docx import Document
+from pam_deepseek8B import generate_minutes_doc
 
 # this function will run the summarization of our program
 def summarize(filepath, model):
@@ -63,8 +64,8 @@ def summarize(filepath, model):
                 while len(gpt.meetingNotesList) < 8:
                     gpt.meetingNotesList.append("No information provided")
         if model == 3:
-            model_name = "DeepSeek-R1-Distill-Llama-8B"
-            pam_deepseek.process_transcript(filepath, model_name, gpt.meetingNotesList)
+            model_name = "./trained_deepseek_r1_1_5b"
+            generate_minutes_doc(filepath)
 
         # Create file name for minutes document
         basename = os.path.basename(filepath)

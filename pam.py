@@ -12,6 +12,7 @@ import os
 import sys
 import re
 from docx import Document
+from pam_deepseek8B import generate_minutes_doc
 
 # Progress callback functionality
 progress_callback = None
@@ -175,8 +176,7 @@ def summarize(filepath, model):
                     gpt.meetingNotesList.append("No information provided")
         if model == 3:
             report_progress(15, "Initializing trained DeepSeek R1 8B model...")
-            model_name = "DeepSeek-R1-Distill-Llama-8B"
-            pam_deepseek.process_transcript(filepath, model_name, gpt.meetingNotesList)
+            generate_minutes_doc(filepath)
 
         # Create file name for minutes document
         report_progress(97, "Creating minutes document...")

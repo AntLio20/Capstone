@@ -78,6 +78,7 @@ pip install numpy
 pip install scikit-learn
 pip install transformers
 pip install bitsandbytes
+pip install peft
 ```
 
 Clone and go to the repository 

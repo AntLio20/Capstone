@@ -8,11 +8,7 @@ from docx import Document
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
-# ------------------------------------------------------------------
-# 1. Model Initialization (Load Once at Import Time)
-# ------------------------------------------------------------------
-
-base_model_path = "./DeepSeek-R1-Distill-LLama-8B"
+base_model_path = "./DeepSeek-R1-Distill-Llama-8B"
 adapter_path = "./trained_deepseek_r1_8b"
 
 # Configure 4-bit quantization
@@ -24,8 +20,8 @@ bnb_config = BitsAndBytesConfig(
 )
 
 max_memory_mapping = {
-    0: "6GiB",        # GPU 0 limit
-    "cpu": "30GiB"    # CPU fallback
+    0: "6GiB",  # GPU 0 limit
+    "cpu": "30GiB"  # CPU fallback
 }
 
 device_map = "auto"
@@ -61,13 +57,6 @@ print("Model loaded successfully.\n")
 # ------------------------------------------------------------------
 
 def generate_raw_summary(transcript_text):
-    """
-    Returns a high-level, single-text-block summary from the transcript.
-    You can craft a prompt that includes all the sections you want.
-
-    NOTE: This function just returns text from the LLM. The text
-    is not guaranteed to have perfect structure. Next, we'll parse it.
-    """
     prompt = (
         "You are an AI that converts transcripts into meeting minutes. "
         "Use the transcript below to produce a full summary with these sections:\n\n"
@@ -107,8 +96,8 @@ def generate_raw_summary(transcript_text):
     with torch.no_grad():
         output_tokens = model.generate(
             **inputs,
-            max_new_tokens=1024,
-            temperature=0.7,
+            max_new_tokens=1200,
+            temperature=0.3,
             top_p=0.9,
             repetition_penalty=1.2,
             num_return_sequences=1
@@ -118,35 +107,7 @@ def generate_raw_summary(transcript_text):
     return raw_text
 
 
-# ------------------------------------------------------------------
-# 3. Parse the LLM Output into a Structured Dictionary
-#    (So we can precisely control the final .docx layout)
-# ------------------------------------------------------------------
-
 def parse_summary_to_dict(raw_summary):
-    """
-    Takes the LLM's raw text output and tries to parse out each section:
-      date, start_time, end_time, present_members, etc.
-    Returns a dictionary that looks like this:
-
-      {
-        "date": str,
-        "start_time": str,
-        "end_time": str,
-        "present_members": list_of_strings,
-        "absent_members": list_of_strings,
-        "agenda_approval": str,
-        "previous_minutes_approval": str,
-        "summary_of_last_meeting": str,
-        "current_meeting_summary": list_of_strings,
-        "actionable_items": dict_of_assignee_lists,
-        ...
-      }
-
-    NOTE: This is just an example parser. Depending on how your LLM
-    structures its output, you'll need to adjust the parsing below.
-    """
-
     data_dict = {
         "date": "No mention in the transcript.",
         "start_time": "No mention in the transcript.",
@@ -157,7 +118,7 @@ def parse_summary_to_dict(raw_summary):
         "previous_minutes_approval": "No mention in the transcript.",
         "summary_of_last_meeting": "No mention in the transcript.",
         "current_meeting_summary": [],  # store as list of bullet points
-        "actionable_items": {},         # store as dict: { "Name": [task1, task2], ... }
+        "actionable_items": {},  # store as dict: { "Name": [task1, task2], ... }
         "adjournment_time": "No mention in the transcript."
     }
 
@@ -242,10 +203,6 @@ def parse_summary_to_dict(raw_summary):
 
     return data_dict
 
-
-# ------------------------------------------------------------------
-# 4. Build the DOCX with the EXACT Format You Showed
-# ------------------------------------------------------------------
 
 def save_minutes_formatted(meeting_data, output_filename="meeting_minutes.docx"):
     doc = Document()
@@ -366,19 +323,7 @@ def save_minutes_formatted(meeting_data, output_filename="meeting_minutes.docx")
     print(f"Saved meeting minutes to {output_filename}")
 
 
-# ------------------------------------------------------------------
-# 5. Integration: Read transcript, generate summary, parse to dict,
-#    then save as .docx
-# ------------------------------------------------------------------
-
 def generate_minutes_doc(transcript_file, output_dir="./MeetingNotes"):
-    """
-    1) Reads the .docx file's text.
-    2) Generates raw summarized text from the LLM.
-    3) Parses that text into a structured dictionary.
-    4) Saves the final minutes docx to 'output_dir/<filename>minutes.docx'
-    """
-
     # Make sure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
@@ -386,6 +331,7 @@ def generate_minutes_doc(transcript_file, output_dir="./MeetingNotes"):
     transcript_text = docx2txt.process(transcript_file)
     # 2) Get LLM raw summary
     raw_summary = generate_raw_summary(transcript_text)
+    print(raw_summary)
     # 3) Parse into dictionary
     data_dict = parse_summary_to_dict(raw_summary)
     # 4) Build the final DOCX
@@ -395,19 +341,3 @@ def generate_minutes_doc(transcript_file, output_dir="./MeetingNotes"):
     save_minutes_formatted(data_dict, output_file)
 
     return output_file
-
-
-# ------------------------------------------------------------------
-# 6. Example Usage (as a standalone script)
-# ------------------------------------------------------------------
-
-if __name__ == "__main__":
-    import sys
-    if len(sys.argv) < 2:
-        print("Usage: python your_script.py <path_to_transcript.docx>")
-        sys.exit(1)
-
-    transcript_path = sys.argv[1]
-    print(f"Generating minutes for: {transcript_path}")
-    final_docx = generate_minutes_doc(transcript_path)
-    print(f"Meeting minutes saved to {final_docx}")

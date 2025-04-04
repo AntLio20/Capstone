@@ -167,7 +167,7 @@ def summarize(filepath, model):
         # Special handling for OpenAI model output (model 2)
         if model == 2:
             # Ensure we have enough sections in meetingNotesList
-            # OpenAI's output might have 8 sections but we need to ensure proper formatting
+            # OpenAI's output might have 8 sections, but we need to ensure proper formatting
             if len(gpt.meetingNotesList) < 8:
                 report_progress(96, "Processing incomplete sections...")
                 print("Warning: Incomplete sections in OpenAI output")
@@ -176,7 +176,10 @@ def summarize(filepath, model):
                     gpt.meetingNotesList.append("No information provided")
         if model == 3:
             report_progress(15, "Initializing trained DeepSeek R1 8B model...")
-            generate_minutes_doc(filepath)
+            output_path = generate_minutes_doc(filepath)  # store the returned path
+            report_progress(100, "Minutes successfully generated!")
+            print(f"Minutes successfully generated at: {output_path}")
+            return output_path  # return early to avoid second overwrite
 
         # Create file name for minutes document
         report_progress(97, "Creating minutes document...")

@@ -151,7 +151,7 @@ def summarize(filepath, model):
             # Call the DeepSeek API implementation
             report_progress(15, "Initializing DeepSeek API...")
             # Set progress callback for GPT module to receive progress updates
-            gpt.set_progress_callback(progress_callback)
+            # gpt.set_progress_callback(progress_callback)
             gpt.deepseekAPI(filepath)
             report_progress(95, "Finalizing DeepSeek API results...")
 
@@ -160,7 +160,7 @@ def summarize(filepath, model):
             # Call the OpenAI API implementation
             report_progress(15, "Initializing OpenAI API...")
             # Set progress callback for GPT module to receive progress updates
-            gpt.set_progress_callback(progress_callback)
+            # gpt.set_progress_callback(progress_callback)
             gpt.gptSummarization(filepath)
             report_progress(95, "Finalizing OpenAI results...")
 

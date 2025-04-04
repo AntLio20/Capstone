@@ -88,8 +88,15 @@ git clone https://github.com/AntLio20/Capstone
 
 Install the DeepSeek Local Models
 ```bash
+git lfs install
 git clone https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Llama-8B
+cd DeepSeek-R1-Distill-Llama-8B
+git lfs pull
+cd ..
 git clone https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+cd DeepSeek-R1-Distill-Qwen-1.5B
+git lfs pull
+cd ..
 ```
 
 Execute Script

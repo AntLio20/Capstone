@@ -27,8 +27,7 @@ from PIL import Image, ImageQt
 import progress_bar_integration
 
 # connecting to openai
-openai.api_key = os.getenv(
-    "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")
+openai.api_key = os.getenv("")
 
 # setting up global values
 documentFont = QFont("Times New Roman", 12)  # Default font and font size

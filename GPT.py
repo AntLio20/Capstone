@@ -52,7 +52,7 @@ def chunkToTextGPT(transcript, max_token, totalChunks = 0):
 
 def gptSummarization(filepath):
     # Connecting to OpenAI
-    openai.api_key = "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"
+    openai.api_key = ""
 
     # initializing a counter for each section
     sectionCounter = 0
@@ -126,7 +126,7 @@ def gptSummarization(filepath):
         print(f"{note}\n")
 
 def deepseekAPI(filepath):
-    client = OpenAI(api_key="sk-babbed6e88f6401d91e35ebd5808d5b5", base_url="https://api.deepseek.com")
+    client = OpenAI(api_key="", base_url="https://api.deepseek.com")
 
     # initializing a counter for each section
     sectionCounter = 0
